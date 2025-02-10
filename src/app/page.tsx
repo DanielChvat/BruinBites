@@ -1,101 +1,154 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
+import { Tab } from "@headlessui/react";
+import type { Dish, DietaryTag } from "@/lib/supabase";
+import { getDishes, getDietaryTags } from "@/lib/api";
+
+function classNames(...classes: string[]) {
+    return classes.filter(Boolean).join(" ");
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    const [selectedDiningHall, setSelectedDiningHall] =
+        useState<string>("EPICURIA");
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [dishes, setDishes] = useState<Dish[]>([]);
+    const [dietaryTags, setDietaryTags] = useState<DietaryTag[]>([]);
+    const [loading, setLoading] = useState(true);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    const diningHalls = [
+        { name: "Epicuria", code: "EPICURIA" },
+        { name: "De Neve", code: "DENEVE" },
+        { name: "Bruin Plate", code: "BRUINPLATE" },
+    ];
+
+    useEffect(() => {
+        async function fetchDietaryTags() {
+            const tags = await getDietaryTags();
+            setDietaryTags(tags);
+        }
+        fetchDietaryTags();
+    }, []);
+
+    useEffect(() => {
+        async function fetchDishes() {
+            setLoading(true);
+            const newDishes = await getDishes(selectedDiningHall, selectedTags);
+            setDishes(newDishes);
+            setLoading(false);
+        }
+        fetchDishes();
+    }, [selectedDiningHall, selectedTags]);
+
+    const toggleTag = (tag: string) => {
+        setSelectedTags((prev) =>
+            prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+        );
+    };
+
+    return (
+        <div className="max-w-4xl mx-auto">
+            <Tab.Group>
+                <Tab.List className="flex space-x-1 rounded-xl bg-ucla-blue/10 p-1">
+                    {diningHalls.map((hall) => (
+                        <Tab
+                            key={hall.code}
+                            className={({ selected }) =>
+                                classNames(
+                                    "w-full rounded-lg py-2.5 text-sm font-medium leading-5",
+                                    "ring-white/60 ring-offset-2 ring-offset-ucla-blue focus:outline-none focus:ring-2",
+                                    selected
+                                        ? "bg-white text-ucla-blue shadow"
+                                        : "text-ucla-blue hover:bg-white/[0.12] hover:text-ucla-blue"
+                                )
+                            }
+                            onClick={() => setSelectedDiningHall(hall.code)}
+                        >
+                            {hall.name}
+                        </Tab>
+                    ))}
+                </Tab.List>
+            </Tab.Group>
+
+            <div className="mt-8">
+                <h2 className="text-lg font-semibold mb-4 text-gray-900">
+                    Dietary Preferences
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                    {dietaryTags.map((tag) => (
+                        <button
+                            key={tag.code}
+                            onClick={() => toggleTag(tag.code)}
+                            className={classNames(
+                                "px-3 py-1 rounded-full text-sm font-medium transition-colors",
+                                selectedTags.includes(tag.code)
+                                    ? "bg-ucla-blue text-white"
+                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            )}
+                            title={tag.description}
+                        >
+                            {tag.name}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="mt-8 space-y-4">
+                {loading ? (
+                    <div className="text-center py-12">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ucla-blue mx-auto"></div>
+                        <p className="mt-4 text-gray-600">Loading dishes...</p>
+                    </div>
+                ) : dishes.length === 0 ? (
+                    <div className="text-center py-12 bg-white rounded-lg shadow">
+                        <p className="text-gray-600">
+                            No dishes found with the selected filters
+                        </p>
+                    </div>
+                ) : (
+                    dishes.map((dish) => (
+                        <div
+                            key={dish.id}
+                            className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                        >
+                            <h3 className="text-xl font-medium text-gray-900">
+                                {dish.name}
+                            </h3>
+                            {dish.dietary_tags && (
+                                <div className="mt-3 flex flex-wrap gap-1.5">
+                                    {dish.dietary_tags.map((tag) => (
+                                        <span
+                                            key={tag}
+                                            className="px-2 py-0.5 rounded-full bg-ucla-blue/10 text-ucla-blue text-xs font-medium"
+                                        >
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                            {dish.ingredients && (
+                                <p className="mt-3 text-sm text-gray-600">
+                                    <span className="font-medium">
+                                        Ingredients:
+                                    </span>{" "}
+                                    {dish.ingredients.join(", ")}
+                                </p>
+                            )}
+                            {dish.recipe_url && (
+                                <a
+                                    href={dish.recipe_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-4 inline-flex items-center text-sm text-ucla-blue hover:text-ucla-blue/80"
+                                >
+                                    View Recipe →
+                                </a>
+                            )}
+                        </div>
+                    ))
+                )}
+            </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    );
 }
