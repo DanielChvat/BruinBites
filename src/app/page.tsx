@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Tab } from "@headlessui/react";
+import { Combobox } from "@headlessui/react";
 import type { Dish, DietaryTag } from "@/lib/supabase";
-import { getDishes, getDietaryTags } from "@/lib/api";
+import { getDishes, getDietaryTags, getAllIngredients } from "@/lib/api";
 
 function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(" ");
@@ -13,8 +14,13 @@ export default function Home() {
     const [selectedDiningHall, setSelectedDiningHall] =
         useState<string>("EPICURIA");
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [excludedIngredients, setExcludedIngredients] = useState<string[]>(
+        []
+    );
     const [dishes, setDishes] = useState<Dish[]>([]);
     const [dietaryTags, setDietaryTags] = useState<DietaryTag[]>([]);
+    const [allIngredients, setAllIngredients] = useState<string[]>([]);
+    const [ingredientQuery, setIngredientQuery] = useState("");
     const [loading, setLoading] = useState(true);
 
     const diningHalls = [
@@ -28,24 +34,46 @@ export default function Home() {
             const tags = await getDietaryTags();
             setDietaryTags(tags);
         }
+        async function fetchIngredients() {
+            const ingredients = await getAllIngredients();
+            setAllIngredients(ingredients);
+        }
         fetchDietaryTags();
+        fetchIngredients();
     }, []);
 
     useEffect(() => {
         async function fetchDishes() {
             setLoading(true);
-            const newDishes = await getDishes(selectedDiningHall, selectedTags);
+            const newDishes = await getDishes(
+                selectedDiningHall,
+                selectedTags,
+                excludedIngredients
+            );
             setDishes(newDishes);
             setLoading(false);
         }
         fetchDishes();
-    }, [selectedDiningHall, selectedTags]);
+    }, [selectedDiningHall, selectedTags, excludedIngredients]);
 
     const toggleTag = (tag: string) => {
         setSelectedTags((prev) =>
             prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
         );
     };
+
+    const removeIngredient = (ingredient: string) => {
+        setExcludedIngredients((prev) => prev.filter((i) => i !== ingredient));
+    };
+
+    const filteredIngredients =
+        ingredientQuery === ""
+            ? allIngredients
+            : allIngredients.filter((ingredient) =>
+                  ingredient
+                      .toLowerCase()
+                      .includes(ingredientQuery.toLowerCase())
+              );
 
     return (
         <div className="max-w-4xl mx-auto">
@@ -92,6 +120,77 @@ export default function Home() {
                         </button>
                     ))}
                 </div>
+            </div>
+
+            <div className="mt-8">
+                <h2 className="text-lg font-semibold mb-4 text-gray-900">
+                    Exclude Ingredients
+                </h2>
+                <div className="relative">
+                    <Combobox
+                        value={null}
+                        onChange={(ingredient: string) => {
+                            if (
+                                ingredient &&
+                                !excludedIngredients.includes(ingredient)
+                            ) {
+                                setExcludedIngredients((prev) => [
+                                    ...prev,
+                                    ingredient,
+                                ]);
+                            }
+                            setIngredientQuery("");
+                        }}
+                    >
+                        <div className="relative">
+                            <Combobox.Input
+                                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-ucla-blue focus:ring-ucla-blue"
+                                placeholder="Search ingredients to exclude..."
+                                onChange={(event) =>
+                                    setIngredientQuery(event.target.value)
+                                }
+                                displayValue={() => ""}
+                            />
+                            <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                {filteredIngredients.map((ingredient) => (
+                                    <Combobox.Option
+                                        key={ingredient}
+                                        value={ingredient}
+                                        className={({ active }) =>
+                                            classNames(
+                                                "relative cursor-default select-none py-2 pl-3 pr-9",
+                                                active
+                                                    ? "bg-ucla-blue text-white"
+                                                    : "text-gray-900"
+                                            )
+                                        }
+                                    >
+                                        {ingredient}
+                                    </Combobox.Option>
+                                ))}
+                            </Combobox.Options>
+                        </div>
+                    </Combobox>
+                </div>
+
+                {excludedIngredients.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                        {excludedIngredients.map((ingredient) => (
+                            <span
+                                key={ingredient}
+                                className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm"
+                            >
+                                {ingredient}
+                                <button
+                                    onClick={() => removeIngredient(ingredient)}
+                                    className="text-red-500 hover:text-red-700"
+                                >
+                                    ×
+                                </button>
+                            </span>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div className="mt-8 space-y-4">
