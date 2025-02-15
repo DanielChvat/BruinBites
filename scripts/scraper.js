@@ -1,246 +1,320 @@
-const { OpenAI } = require("openai");
+const axios = require("axios");
+const cheerio = require("cheerio");
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+// GPT Prompt for ingredient parsing:
+/*
+Extract all ingredients from UCLA dining hall menu items. Follow these rules:
+1. Break down compound ingredients into their base components
+   Example: "Pomodoro Sauce (Tomatoes, Garlic)" -> ["tomatoes", "garlic"]
+2. Include both container and contained ingredients
+   Example: "Tomatoes (Diced)" -> ["tomatoes", "diced tomatoes"]
+3. Clean and normalize each ingredient:
+   - Convert to lowercase
+   - Remove descriptions in parentheses
+   - Remove percentages and measurements
+   - Remove prefixes like "contains", "includes", "with"
+4. Handle nested ingredients:
+   Example: "Pasta (Wheat Flour (Enriched))" -> ["pasta", "wheat flour"]
+5. Special cases:
+   - Keep both generic and specific names: "Beans (Pinto)" -> ["beans", "pinto beans"]
+   - Remove "contains X% or less" statements
+   - Remove allergen warnings
+   - Remove preparation methods (diced, chopped, etc.)
+*/
 
-const { JSDOM } = require("jsdom");
-
-const DINING_HALLS = {
-    EPICURIA: 0,
-    DENEVE: 1,
-    BRUINPLATE: 2,
-};
-
-const DIETARY_TAGS = [
-    "V",
-    "VG",
-    "APNT",
-    "ATNT",
-    "AWHT",
-    "AGTN",
-    "ASOY",
-    "ASES",
-    "AMLK",
-    "AEGG",
-    "ACSF",
-    "AFSH",
-    "AALC",
-    "HAL",
-    "LC",
-    "HC",
+const PREPARATION_METHODS = [
+    "diced",
+    "chopped",
+    "minced",
+    "sliced",
+    "ground",
+    "powdered",
+    "dried",
+    "fresh",
+    "frozen",
+    "canned",
+    "cooked",
+    "raw",
+    "prepared",
+    "cultured",
+    "enriched",
+    "refined",
+    "pureed",
+    "crushed",
+    "whole",
+    "peeled",
+    "smoked",
+    "added",
+    "free-flowing",
+    "natural",
+    "sundried",
+    "vine-ripened",
 ];
 
-async function fetchDOM(url) {
-    const response = await fetch(url);
-    const html = await response.text();
+const DESCRIPTORS_TO_REMOVE = [
+    "contains",
+    "includes",
+    "with",
+    "and",
+    "or",
+    "in",
+    "pure",
+    "natural",
+    "organic",
+    "conventional",
+    "processed",
+    "modified",
+    "concentrated",
+    "low-fat",
+    "white",
+    "black",
+    "extra",
+    "virgin",
+    "to",
+    "make",
+    "halal",
+];
 
-    const dom = new JSDOM(html);
-    const document = dom.window.document;
+const COMPOUND_EXCEPTIONS = [
+    "sauce",
+    "blend",
+    "mix",
+    "oil",
+    "powder",
+    "extract",
+    "syrup",
+    "puree",
+    "paste",
+    "juice",
+    "water",
+    "milk",
+    "cream",
+    "dioxide",
+    "acid",
+    "flavor",
+    "sugar",
+    "olive oil",
+    "canola oil",
+    "lemon juice",
+    "cayenne pepper",
+    "black pepper",
+];
 
-    return document;
-}
+const INGREDIENTS_TO_SKIP = new Set([
+    "water",
+    "salt",
+    "kosher salt",
+    "enzymes",
+    "calcium",
+    "chloride",
+    "acid",
+    "dioxide",
+    "glucose",
+    "sulfate",
+    "mononitrate",
+    "silicone",
+    "sugar",
+    "cane sugar",
+    "to",
+    "make",
+    "added",
+    "free-flowing",
+    "natural",
+    "flavor",
+]);
 
-async function getIngredientInfo(url) {
-    let document = await fetchDOM(url);
+function cleanIngredient(ingredient) {
+    // Convert to lowercase and trim
+    let cleaned = ingredient.toLowerCase().trim();
 
-    if (document.getElementsByClassName("redirect-info").length > 0)
-        return ["", {}];
+    // Remove "contains X% or less" statements
+    cleaned = cleaned.replace(/contains .+% or less of.*$/i, "");
+    cleaned = cleaned.replace(/\d+% or less.*$/i, "");
 
-    let ingredients = document
-        .getElementsByClassName("ingred_allergen")[0]
-        .getElementsByTagName("p")[0].childNodes[1].textContent;
+    // Remove allergen warnings
+    cleaned = cleaned.replace(/allergen.*$/i, "");
+    cleaned = cleaned.replace(/may contain.*$/i, "");
 
-    let dish_dietary_tags = {};
+    // Remove preparation methods
+    const prepMethodsPattern = new RegExp(
+        `\\b(${PREPARATION_METHODS.join("|")})\\b`,
+        "gi"
+    );
+    cleaned = cleaned.replace(prepMethodsPattern, "");
 
-    DIETARY_TAGS.forEach((tag) => {
-        dish_dietary_tags[tag] = Boolean(
-            document.querySelector(`img[alt="${tag}"]`)
-        );
-    });
+    // Remove descriptors
+    const descriptorsPattern = new RegExp(
+        `\\b(${DESCRIPTORS_TO_REMOVE.join("|")})\\b`,
+        "gi"
+    );
+    cleaned = cleaned.replace(descriptorsPattern, "");
 
-    return [ingredients, dish_dietary_tags];
-}
+    // Remove parenthetical content
+    cleaned = cleaned.replace(/\([^)]*\)/g, "");
 
-async function getDishInfo(url, DINING_HALL_ID) {
-    let document = await fetchDOM(url);
+    // Remove punctuation and extra spaces
+    cleaned = cleaned
+        .replace(/[.,;:()]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
 
-    let elements = document.getElementsByClassName("recipelink");
-
-    dishes = Array(elements.length);
-
-    for (let i = 0; i < elements.length; i++) {
-        const ingredient_info = await getIngredientInfo(elements[i].href);
-
-        dishes[i] = {
-            NAME: elements[i].textContent,
-            RECIPE: elements[i].href,
-            INGREDIENTS: ingredient_info[0],
-            "DIETARY TAGS": ingredient_info[1],
-            DINING_HALL_ID: DINING_HALL_ID,
-        };
+    // Skip empty or common ingredients
+    if (!cleaned || INGREDIENTS_TO_SKIP.has(cleaned)) {
+        return [];
     }
 
-    return dishes;
+    // Handle vitamins
+    if (cleaned.match(/^vitamin [a-z][0-9]?/i)) {
+        return [cleaned.replace(/\s+/g, "")];
+    }
+
+    // Check if the entire cleaned string is a compound exception
+    if (COMPOUND_EXCEPTIONS.includes(cleaned)) {
+        return [cleaned];
+    }
+
+    // Handle compound ingredients
+    if (cleaned.includes(" ")) {
+        const words = cleaned.split(" ").filter((w) => w.length > 0);
+
+        // Skip if any word is in the skip list
+        if (words.some((w) => INGREDIENTS_TO_SKIP.has(w))) {
+            const mainIngredient = words.find(
+                (w) => !INGREDIENTS_TO_SKIP.has(w)
+            );
+            return mainIngredient ? [mainIngredient] : [];
+        }
+
+        // Handle special compound ingredients
+        if (words.length === 2) {
+            const [first, second] = words;
+
+            // If the combination is in exceptions, keep as is
+            if (COMPOUND_EXCEPTIONS.includes(`${first} ${second}`)) {
+                return [cleaned];
+            }
+
+            // For other compounds, split into components
+            return [first, second].filter(Boolean);
+        }
+
+        // For longer compounds (e.g., "durum wheat flour"), keep as is
+        return [cleaned];
+    }
+
+    return [cleaned];
 }
 
-async function classifyIngredients(dish) {
-    const completion = await openai.chat.completions
-        .create({
-            model: "gpt-4o-mini",
-            messages: [
-                {
-                    role: "developer",
-                    content: `
-                Extract ingredients from the provided text input and return them as a list in a JSON object.
+function extractIngredients(text) {
+    // Remove multiple spaces and trim
+    text = text.replace(/\s+/g, " ").trim();
 
-Identify and isolate the section that lists ingredients within the provided text. Extract each component ingredient as a 
-separate string, even if they are nested within other ingredients. Ensure that the output only includes ingredients and 
-not dish names, descriptors, or any other information.
+    const ingredients = [];
+    let currentDepth = 0;
+    let currentIngredient = "";
+    let insideParens = false;
 
-# Output Format
-Return the output as a JSON object with the following schema:
+    for (const char of text) {
+        if (char === "(") {
+            if (currentDepth === 0) {
+                // Save the outer ingredient if it exists
+                const outer = currentIngredient.trim();
+                if (outer && !outer.endsWith(":")) {
+                    ingredients.push(outer);
+                }
+                currentIngredient = "";
+                insideParens = true;
+            }
+            currentDepth++;
+        } else if (char === ")") {
+            currentDepth--;
+            if (currentDepth === 0) {
+                insideParens = false;
+                // Process the content inside parentheses
+                if (currentIngredient.trim()) {
+                    ingredients.push(
+                        ...currentIngredient.split(",").map((i) => i.trim())
+                    );
+                }
+                currentIngredient = "";
+            }
+        } else if (char === "," && !insideParens) {
+            if (currentIngredient.trim()) {
+                ingredients.push(currentIngredient.trim());
+            }
+            currentIngredient = "";
+        } else {
+            currentIngredient += char;
+        }
+    }
 
-json
+    // Add the last ingredient if any
+    if (currentIngredient.trim()) {
+        ingredients.push(currentIngredient.trim());
+    }
 
-{
-
-  "ingredients": [
-
-    "ingredient 1",
-
-    "ingredient 2",
-
-    "ingredient 3"
-
-  ]
-
+    return ingredients;
 }
 
+function parseIngredients(ingredientsText) {
+    if (!ingredientsText) return [];
 
-# Examples
+    // First, extract all ingredients including those in parentheses
+    const extractedIngredients = extractIngredients(ingredientsText);
 
-**Example Input:**
+    // Clean and normalize each ingredient
+    const cleanedIngredients = extractedIngredients
+        .flatMap(cleanIngredient)
+        .filter((i) => i.length > 0)
+        .filter((i) => !i.match(/^\d+%$/)) // Remove percentage entries
+        .filter((i) => !i.match(/allergen/i)) // Remove allergen warnings
+        .filter((i) => !i.match(/^(vitamin|iron|acid|sulfate|dioxide)$/i)); // Remove standalone supplements
 
-plaintext
-
-Name: Herbs de Provence Grilled Chicken Thigh
-
-Descriptors: HAL Halal Menu Option
-
-INGREDIENTS: Halal Chicken, Herbes de Provence Marinade (Fresh Lemon Juice, Garlic Powder, Herbs De Provence (Spices, Lavender), 
-Extra Virgin Olive Oil (Extra Virgin Olive Oil), Black Pepper, Kosher Salt)
-
-**Expected Output:**
-
-json
-
-{
-
-  "ingredients": [
-
-    "Halal Chicken",
-
-    "Herbes de Provence Marinade",
-
-    "Fresh Lemon Juice",
-
-    "Garlic Powder",
-
-    "Herbes De Provence",
-
-    "Spices",
-
-    "Lavender",
-
-    "Extra Virgin Olive Oil",
-
-    "Black Pepper",
-
-    "Kosher Salt"
-
-  ]
-
-}
-                `,
-                },
-                {
-                    role: "user",
-                    content: dish,
-                },
-            ],
-            response_format: {
-                type: "json_schema",
-                json_schema: {
-                    name: "dish_schema",
-
-                    strict: true,
-
-                    schema: {
-                        type: "object",
-
-                        required: ["dishes"],
-
-                        properties: {
-                            dishes: {
-                                type: "array",
-
-                                items: {
-                                    type: "object",
-
-                                    required: ["dish", "ingredients"],
-
-                                    properties: {
-                                        dish: {
-                                            type: "string",
-
-                                            description:
-                                                "The name of the dish.",
-                                        },
-
-                                        ingredients: {
-                                            type: "array",
-
-                                            items: {
-                                                type: "string",
-                                            },
-
-                                            description:
-                                                "A list of ingredients required for the dish.",
-                                        },
-                                    },
-
-                                    additionalProperties: false,
-                                },
-
-                                description:
-                                    "A list of dishes, variable number based on input",
-                            },
-                        },
-
-                        additionalProperties: false,
-                    },
-                },
-            },
-        })
-        .then((response) => console.log(response.choices[0].message));
+    // Remove duplicates and sort
+    return Array.from(new Set(cleanedIngredients)).sort();
 }
 
-(async () => {
-    await getDishInfo(
-        "https://menu.dining.ucla.edu/Menus/Epicuria",
-        DINING_HALLS.EPICURIA
-    );
-    await getDishInfo(
-        "https://menu.dining.ucla.edu/Menus/DeNeve",
-        DINING_HALLS.DENEVE
-    );
-    await getDishInfo(
-        "https://menu.dining.ucla.edu/Menus/BruinPlate",
-        DINING_HALLS.BRUINPLATE
-    );
-})();
+async function getDishes(url, diningHallId) {
+    try {
+        const response = await axios.get(url);
+        const $ = cheerio.load(response.data);
+        const dishes = [];
+
+        $(".menu-item").each((_, element) => {
+            const name = $(element).find(".menu-item-name").text().trim();
+            const recipe =
+                $(element).find(".menu-item-recipe a").attr("href") || "";
+            const ingredientsText = $(element)
+                .find(".menu-item-ingredients")
+                .text()
+                .trim();
+            const ingredients = parseIngredients(ingredientsText).join(",");
+            const dietaryTags = {};
+
+            $(element)
+                .find(".menu-item-dietary-tags span")
+                .each((_, tag) => {
+                    const tagCode = $(tag).attr("class")?.split("-")[1] || "";
+                    dietaryTags[tagCode] = true;
+                });
+
+            dishes.push({
+                NAME: name,
+                RECIPE: recipe,
+                INGREDIENTS: ingredients,
+                "DIETARY TAGS": dietaryTags,
+                DINING_HALL_ID: diningHallId,
+            });
+        });
+
+        return dishes;
+    } catch (error) {
+        console.error(`Error fetching dishes from ${url}:`, error);
+        return [];
+    }
+}
 
 module.exports = {
-    getDishes: getDishInfo,
+    getDishes,
+    parseIngredients,
 };
