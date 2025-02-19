@@ -1,6 +1,24 @@
 import { supabase } from "./supabase";
 import type { DiningHall, Dish, DietaryTag } from "./supabase";
 
+// Dietary tags that should show only matching dishes
+export const PREFERENCE_TAGS = new Set(["V", "VG", "HAL", "LC", "HC"]);
+
+// Dietary tags that should exclude dishes (allergens/warnings)
+export const ALLERGEN_TAGS = new Set([
+    "APNT",
+    "ATNT",
+    "AWHT",
+    "AGTN",
+    "ASOY",
+    "ASES",
+    "AMLK",
+    "AEGG",
+    "ACSF",
+    "AFSH",
+    "AALC",
+]);
+
 export async function getDishes(
     diningHallCode: string,
     selectedTags: string[] = [],
@@ -10,6 +28,12 @@ export async function getDishes(
     const normalizedExcludedIngredients = new Set(
         excludedIngredients.map((i) => i.toLowerCase())
     );
+
+    // Split selected tags into preferences and allergens
+    const preferenceTags = selectedTags.filter((tag) =>
+        PREFERENCE_TAGS.has(tag)
+    );
+    const allergenTags = selectedTags.filter((tag) => ALLERGEN_TAGS.has(tag));
 
     let query = supabase
         .from("dishes")
@@ -27,8 +51,9 @@ export async function getDishes(
         )
         .eq("dining_halls.code", diningHallCode);
 
-    if (selectedTags.length > 0) {
-        query = query.in("dish_dietary_tags.dietary_tags.code", selectedTags);
+    // If preference tags are selected, show only dishes with those tags
+    if (preferenceTags.length > 0) {
+        query = query.in("dish_dietary_tags.dietary_tags.code", preferenceTags);
     }
 
     const { data: allDishes, error: dishError } = await query;
@@ -49,24 +74,48 @@ export async function getDishes(
                 .map((ingredient: any) => ingredient.ingredients?.name)
                 .filter(Boolean),
         }))
-        .filter(
-            (dish) =>
-                normalizedExcludedIngredients.size === 0 ||
-                !dish.ingredients.some((ingredient: string) =>
+        .filter((dish) => {
+            // Filter out dishes with selected allergen tags
+            if (
+                allergenTags.length > 0 &&
+                dish.dietary_tags.some((tag: string) =>
+                    allergenTags.includes(tag)
+                )
+            ) {
+                return false;
+            }
+
+            // Filter out dishes with excluded ingredients
+            if (
+                normalizedExcludedIngredients.size > 0 &&
+                dish.ingredients.some((ingredient: string) =>
                     normalizedExcludedIngredients.has(ingredient.toLowerCase())
                 )
-        );
+            ) {
+                return false;
+            }
+
+            return true;
+        });
 }
 
 export async function getDietaryTags(): Promise<DietaryTag[]> {
-    const { data, error } = await supabase.from("dietary_tags").select("*");
+    const { data, error } = await supabase
+        .from("dietary_tags")
+        .select("*")
+        .order("code");
 
     if (error) {
         console.error("Error fetching dietary tags:", error);
         return [];
     }
 
-    return data;
+    // Transform the tags to indicate their type
+    return data.map((tag) => ({
+        ...tag,
+        isAllergen: ALLERGEN_TAGS.has(tag.code),
+        isPreference: PREFERENCE_TAGS.has(tag.code),
+    }));
 }
 
 export async function getAllIngredients(): Promise<string[]> {

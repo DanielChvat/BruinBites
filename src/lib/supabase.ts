@@ -37,4 +37,6 @@ export type DietaryTag = {
     code: string;
     name: string;
     description: string;
+    isAllergen: boolean;
+    isPreference: boolean;
 };
