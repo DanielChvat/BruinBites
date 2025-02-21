@@ -1,6 +1,26 @@
 import { NextResponse } from "next/server";
-import { getDishes } from "../../../../scripts/scraper";
 import { supabase } from "@/lib/supabase";
+
+interface Dish {
+    NAME: string;
+    RECIPE: string;
+    INGREDIENTS: string;
+    "DIETARY TAGS": Record<string, boolean>;
+    DINING_HALL_ID: number;
+}
+
+async function fetchDishes(url: string, diningHallId: number): Promise<Dish[]> {
+    const apiUrl = new URL("/api/scrape", "http://localhost:3000");
+    apiUrl.searchParams.set("url", url);
+    apiUrl.searchParams.set("diningHallId", diningHallId.toString());
+
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch dishes: ${response.statusText}`);
+    }
+
+    return response.json();
+}
 
 export async function POST(request: Request) {
     try {
@@ -13,15 +33,15 @@ export async function POST(request: Request) {
         }
 
         // Fetch new data from dining halls
-        const epicuriaDishes = await getDishes(
+        const epicuriaDishes = await fetchDishes(
             "https://menu.dining.ucla.edu/Menus/Epicuria",
             0
         );
-        const deNeveDishes = await getDishes(
+        const deNeveDishes = await fetchDishes(
             "https://menu.dining.ucla.edu/Menus/DeNeve",
             1
         );
-        const bPlateDishes = await getDishes(
+        const bPlateDishes = await fetchDishes(
             "https://menu.dining.ucla.edu/Menus/BruinPlate",
             2
         );
@@ -56,9 +76,10 @@ export async function POST(request: Request) {
                 }
 
                 // Process ingredients
-                const ingredients = dish.INGREDIENTS.split(",").map(
-                    (i: string) => i.trim()
-                );
+                const ingredients = dish.INGREDIENTS.split(",")
+                    .map((i) => i.trim())
+                    .filter(Boolean);
+
                 for (const ingredientName of ingredients) {
                     // Get or create ingredient
                     const { data: ingredient } = await supabase
@@ -110,9 +131,9 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error("Error refreshing data:", error);
+        console.error("Error in refresh endpoint:", error);
         return NextResponse.json(
-            { error: "Internal Server Error" },
+            { error: "Internal server error" },
             { status: 500 }
         );
     }

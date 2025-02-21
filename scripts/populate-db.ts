@@ -1,11 +1,32 @@
 import { config } from "dotenv";
 import { resolve } from "path";
+import { supabase } from "../src/lib/supabase";
+import { getBaseUrl } from "../src/lib/config";
 
 // Load environment variables from the root .env file
 config({ path: resolve(__dirname, "../.env") });
 
-import { supabase } from "../src/lib/supabase";
-import { getDishes } from "../scraper.js";
+interface Dish {
+    NAME: string;
+    RECIPE: string;
+    INGREDIENTS: string;
+    "DIETARY TAGS": Record<string, boolean>;
+    DINING_HALL_ID: number;
+}
+
+async function fetchDishes(url: string, diningHallId: number): Promise<Dish[]> {
+    const baseUrl = getBaseUrl();
+    const apiUrl = new URL("/api/scrape", baseUrl);
+    apiUrl.searchParams.set("url", url);
+    apiUrl.searchParams.set("diningHallId", diningHallId.toString());
+
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch dishes: ${response.statusText}`);
+    }
+
+    return response.json();
+}
 
 async function getOrCreateIngredient(name: string) {
     // First try to get the existing ingredient
@@ -62,21 +83,21 @@ async function populateDatabase() {
         console.log("Starting to fetch dishes from dining halls...");
 
         console.log("Fetching Epicuria dishes...");
-        const epicuriaDishes = await getDishes(
+        const epicuriaDishes = await fetchDishes(
             "https://menu.dining.ucla.edu/Menus/Epicuria",
             0
         );
         console.log(`Found ${epicuriaDishes.length} dishes from Epicuria`);
 
         console.log("Fetching De Neve dishes...");
-        const deNeveDishes = await getDishes(
+        const deNeveDishes = await fetchDishes(
             "https://menu.dining.ucla.edu/Menus/DeNeve",
             1
         );
         console.log(`Found ${deNeveDishes.length} dishes from De Neve`);
 
         console.log("Fetching Bruin Plate dishes...");
-        const bPlateDishes = await getDishes(
+        const bPlateDishes = await fetchDishes(
             "https://menu.dining.ucla.edu/Menus/BruinPlate",
             2
         );
@@ -124,9 +145,9 @@ async function populateDatabase() {
             console.log("✓ Dish inserted successfully");
 
             // Insert ingredients
-            const ingredients = dish.INGREDIENTS.split(",").map((i: string) =>
-                i.trim()
-            );
+            const ingredients = dish.INGREDIENTS.split(",")
+                .map((i) => i.trim())
+                .filter(Boolean);
             console.log(`Processing ${ingredients.length} ingredients...`);
 
             let successfulIngredients = 0;
