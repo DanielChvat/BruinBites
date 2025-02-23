@@ -7,6 +7,7 @@ interface Dish {
     INGREDIENTS: string;
     "DIETARY TAGS": Record<string, boolean>;
     DINING_HALL_ID: number;
+    MEAL_PERIOD?: string;
 }
 
 function parseIngredients(ingredientsText: string): string[] {
@@ -16,12 +17,18 @@ function parseIngredients(ingredientsText: string): string[] {
         .filter(Boolean);
 }
 
+function getMealPeriodFromUrl(url: string): string | undefined {
+    const mealMatches = url.match(/\/today\/(\w+)/);
+    return mealMatches ? mealMatches[1].toLowerCase() : undefined;
+}
+
 async function getDishes(url: string, diningHallId: number): Promise<Dish[]> {
     try {
         const response = await fetch(url);
         const html = await response.text();
         const root = parse(html);
         const dishes: Dish[] = [];
+        const mealPeriod = getMealPeriodFromUrl(url);
 
         root.querySelectorAll(".menu-item").forEach((element) => {
             const name =
@@ -54,6 +61,7 @@ async function getDishes(url: string, diningHallId: number): Promise<Dish[]> {
                 INGREDIENTS: ingredients,
                 "DIETARY TAGS": dietaryTags,
                 DINING_HALL_ID: diningHallId,
+                MEAL_PERIOD: mealPeriod,
             });
         });
 

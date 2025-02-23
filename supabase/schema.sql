@@ -17,9 +17,8 @@ CREATE TABLE dish_meal_periods (
 
 -- Insert meal periods
 INSERT INTO meal_periods (name, start_time, end_time) VALUES
-    ('Breakfast', '07:00:00', '10:00:00'),
-    ('Lunch', '11:00:00', '14:00:00'),
-    ('Dinner', '17:00:00', '21:00:00'),
-    ('Late Night', '21:00:00', '02:00:00');
+    ('Breakfast', '00:00:00', '10:00:00'),
+    ('Lunch', '10:00:00', '15:00:00'),
+    ('Dinner', '15:00:00', '23:59:59');
 
 -- Create updated_at trigger function 
