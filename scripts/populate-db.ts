@@ -355,18 +355,26 @@ async function populateDatabase() {
         let existingDishesUpdated = 0;
         let errors = 0;
 
+        // Get today's date in PDT
+        const pdtDate = new Date().toLocaleString("en-US", {
+            timeZone: "America/Los_Angeles",
+        });
+        const today = new Date(pdtDate).toISOString().split("T")[0];
+        console.log(`\n=== Processing menu for ${today} (PDT) ===`);
+
         for (const hall of diningHalls) {
             console.log(`\n=== Processing ${hall.name} ===`);
 
-            // Get current meal period based on time
-            const now = new Date();
-            const hour = now.getHours();
+            // Get current meal period based on PDT time
+            const pdtHour = new Date(pdtDate).getHours();
             let currentMealPeriod = "Lunch"; // Default to lunch
-            if (hour >= 0 && hour < 10) currentMealPeriod = "Breakfast";
-            else if (hour >= 11 && hour < 15) currentMealPeriod = "Lunch";
+            if (pdtHour >= 0 && pdtHour < 10) currentMealPeriod = "Breakfast";
+            else if (pdtHour >= 11 && pdtHour < 15) currentMealPeriod = "Lunch";
             else currentMealPeriod = "Dinner";
 
-            console.log(`Current meal period: ${currentMealPeriod}`);
+            console.log(
+                `Current meal period: ${currentMealPeriod} (PDT: ${pdtHour}:00)`
+            );
 
             // Fetch dishes for the current meal period
             const mealPeriodUrl = `${
@@ -419,7 +427,7 @@ async function populateDatabase() {
                                 dish_id: existingDish.id,
                                 meal_period_id: mealPeriod.id,
                                 dining_hall_id: dish.DINING_HALL_ID,
-                                date: new Date().toISOString().split("T")[0],
+                                date: today,
                             },
                             {
                                 onConflict:
@@ -490,7 +498,7 @@ async function populateDatabase() {
                                 dish_id: newDish.id,
                                 meal_period_id: mealPeriod.id,
                                 dining_hall_id: dish.DINING_HALL_ID,
-                                date: new Date().toISOString().split("T")[0],
+                                date: today,
                             },
                             {
                                 onConflict:
@@ -516,6 +524,7 @@ async function populateDatabase() {
         }
 
         console.log("\n=== Database Population Summary ===");
+        console.log(`Date: ${today} (PDT)`);
         console.log(`Total dishes processed: ${totalDishesProcessed}`);
         console.log(`New dishes added: ${newDishesAdded}`);
         console.log(`Existing dishes updated: ${existingDishesUpdated}`);

@@ -61,7 +61,10 @@ export async function getDishes(
     const allergenTags = selectedTags.filter((tag) => ALLERGEN_TAGS.has(tag));
 
     const currentMealPeriod = getCurrentMealPeriod();
-    const today = "2025-03-11"; // Hardcode to match the database
+    const pdtDate = new Date().toLocaleString("en-US", {
+        timeZone: "America/Los_Angeles",
+    });
+    const today = new Date(pdtDate).toISOString().split("T")[0];
 
     console.log("Fetching dishes with params:", {
         diningHallCode,
