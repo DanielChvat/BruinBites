@@ -350,8 +350,13 @@ async function populateDatabase() {
             { name: "Bruin Plate", url: `${baseUrl}/BruinPlate` },
         ];
 
+        let totalDishesProcessed = 0;
+        let newDishesAdded = 0;
+        let existingDishesUpdated = 0;
+        let errors = 0;
+
         for (const hall of diningHalls) {
-            console.log(`Processing ${hall.name}...`);
+            console.log(`\n=== Processing ${hall.name} ===`);
 
             // Get current meal period based on time
             const now = new Date();
@@ -360,6 +365,8 @@ async function populateDatabase() {
             if (hour >= 0 && hour < 10) currentMealPeriod = "Breakfast";
             else if (hour >= 11 && hour < 15) currentMealPeriod = "Lunch";
             else currentMealPeriod = "Dinner";
+
+            console.log(`Current meal period: ${currentMealPeriod}`);
 
             // Fetch dishes for the current meal period
             const mealPeriodUrl = `${
@@ -371,6 +378,11 @@ async function populateDatabase() {
             );
 
             for (const dish of dishes) {
+                totalDishesProcessed++;
+                console.log(
+                    `\nProcessing dish ${totalDishesProcessed}/${dishes.length}: ${dish.NAME}`
+                );
+
                 // Check if dish already exists
                 const existingDish = await getDishIfExists(
                     dish.NAME,
@@ -379,8 +391,9 @@ async function populateDatabase() {
 
                 if (existingDish) {
                     console.log(
-                        `Dish ${dish.NAME} already exists, adding to menu...`
+                        `Dish ${dish.NAME} already exists, updating menu...`
                     );
+                    existingDishesUpdated++;
 
                     // Get meal period ID
                     const { data: mealPeriod, error: mealPeriodError } =
@@ -394,22 +407,34 @@ async function populateDatabase() {
                         console.error(
                             `Error getting meal period: ${mealPeriodError.message}`
                         );
+                        errors++;
                         continue;
                     }
 
-                    // Add existing dish to menu using dish_meal_periods table
+                    // Add existing dish to menu using dish_meal_periods table with upsert
                     const { error: menuError } = await supabase
                         .from("dish_meal_periods")
-                        .insert({
-                            dish_id: existingDish.id,
-                            meal_period_id: mealPeriod.id,
-                            dining_hall_id: dish.DINING_HALL_ID,
-                            date: new Date().toISOString().split("T")[0],
-                        });
+                        .upsert(
+                            {
+                                dish_id: existingDish.id,
+                                meal_period_id: mealPeriod.id,
+                                dining_hall_id: dish.DINING_HALL_ID,
+                                date: new Date().toISOString().split("T")[0],
+                            },
+                            {
+                                onConflict:
+                                    "dish_id,meal_period_id,dining_hall_id,date",
+                            }
+                        );
 
                     if (menuError) {
                         console.error(
-                            `Error adding existing dish to menu: ${menuError.message}`
+                            `Error updating menu for existing dish: ${menuError.message}`
+                        );
+                        errors++;
+                    } else {
+                        console.log(
+                            `✓ Added ${dish.NAME} to ${currentMealPeriod} menu`
                         );
                     }
                     continue;
@@ -433,10 +458,14 @@ async function populateDatabase() {
 
                 if (dishError) {
                     console.error(`Error creating dish: ${dishError.message}`);
+                    errors++;
                     continue;
                 }
 
                 if (newDish) {
+                    newDishesAdded++;
+                    console.log(`✓ Created new dish: ${dish.NAME}`);
+
                     // Get meal period ID
                     const { data: mealPeriod, error: mealPeriodError } =
                         await supabase
@@ -449,22 +478,34 @@ async function populateDatabase() {
                         console.error(
                             `Error getting meal period: ${mealPeriodError.message}`
                         );
+                        errors++;
                         continue;
                     }
 
-                    // Add new dish to menu using dish_meal_periods table
+                    // Add new dish to menu using dish_meal_periods table with upsert
                     const { error: menuError } = await supabase
                         .from("dish_meal_periods")
-                        .insert({
-                            dish_id: newDish.id,
-                            meal_period_id: mealPeriod.id,
-                            dining_hall_id: dish.DINING_HALL_ID,
-                            date: new Date().toISOString().split("T")[0],
-                        });
+                        .upsert(
+                            {
+                                dish_id: newDish.id,
+                                meal_period_id: mealPeriod.id,
+                                dining_hall_id: dish.DINING_HALL_ID,
+                                date: new Date().toISOString().split("T")[0],
+                            },
+                            {
+                                onConflict:
+                                    "dish_id,meal_period_id,dining_hall_id,date",
+                            }
+                        );
 
                     if (menuError) {
                         console.error(
                             `Error adding new dish to menu: ${menuError.message}`
+                        );
+                        errors++;
+                    } else {
+                        console.log(
+                            `✓ Added ${dish.NAME} to ${currentMealPeriod} menu`
                         );
                     }
 
@@ -474,7 +515,12 @@ async function populateDatabase() {
             }
         }
 
-        console.log("Database population completed successfully!");
+        console.log("\n=== Database Population Summary ===");
+        console.log(`Total dishes processed: ${totalDishesProcessed}`);
+        console.log(`New dishes added: ${newDishesAdded}`);
+        console.log(`Existing dishes updated: ${existingDishesUpdated}`);
+        console.log(`Errors encountered: ${errors}`);
+        console.log("================================\n");
     } catch (error) {
         console.error("Error populating database:", error);
     }
