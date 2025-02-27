@@ -20,7 +20,9 @@ export async function saveUserPreferences(preferences: UserPreferences) {
 
     const { error } = await supabase.from("user_preferences").upsert({
         user_id: user.id,
-        ...preferences,
+        preference_filters: preferences.preferenceFilters,
+        ingredient_filters: preferences.ingredientFilters,
+        favorite_dishes: preferences.favoriteDishes,
         updated_at: new Date().toISOString(),
     });
 
@@ -41,7 +43,14 @@ export async function getUserPreferences(): Promise<UserPreferences | null> {
         .single();
 
     if (error) throw error;
-    return data;
+
+    if (!data) return null;
+
+    return {
+        preferenceFilters: data.preference_filters || [],
+        ingredientFilters: data.ingredient_filters || [],
+        favoriteDishes: data.favorite_dishes || [],
+    };
 }
 
 export async function updateUserPreferences(updates: Partial<UserPreferences>) {
