@@ -11,6 +11,8 @@ import {
     PREFERENCE_TAGS,
     ALLERGEN_TAGS,
 } from "@/lib/api";
+import SavePreferencesButton from "@/components/SavePreferencesButton";
+import { useSavedPreferences } from "@/hooks/useSavedPreferences";
 
 function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(" ");
@@ -29,6 +31,7 @@ export default function Home() {
     const [ingredientQuery, setIngredientQuery] = useState("");
     const [loading, setLoading] = useState(true);
     const [currentMealPeriod, setCurrentMealPeriod] = useState<string>("");
+    const { preferences, loading: loadingPreferences } = useSavedPreferences();
 
     const diningHalls = [
         { name: "Epicuria", code: "EPICURIA" },
@@ -94,6 +97,16 @@ export default function Home() {
         fetchDishes();
     }, [selectedDiningHall, selectedTags, excludedIngredients]);
 
+    // Load saved preferences when they become available
+    useEffect(() => {
+        if (preferences && !loadingPreferences) {
+            // Load preference filters
+            setSelectedTags(preferences.preferenceFilters);
+            // Load ingredient filters
+            setExcludedIngredients(preferences.ingredientFilters);
+        }
+    }, [preferences, loadingPreferences]);
+
     const toggleTag = (tag: string) => {
         setSelectedTags((prev) =>
             prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
@@ -141,11 +154,22 @@ export default function Home() {
                     <h1 className="text-3xl font-bold text-gray-900">
                         BruinBites
                     </h1>
-                    <div className="text-lg text-gray-600">
-                        Showing menu for:{" "}
-                        <span className="font-semibold capitalize">
-                            {currentMealPeriod}
-                        </span>
+                    <div className="flex items-center gap-4">
+                        <div className="text-lg text-gray-600">
+                            Showing menu for:{" "}
+                            <span className="font-semibold capitalize">
+                                {currentMealPeriod}
+                            </span>
+                        </div>
+                        <SavePreferencesButton
+                            dietaryPreferences={selectedTags.filter((tag) =>
+                                PREFERENCE_TAGS.has(tag)
+                            )}
+                            excludedAllergens={selectedTags.filter((tag) =>
+                                ALLERGEN_TAGS.has(tag)
+                            )}
+                            excludedIngredients={excludedIngredients}
+                        />
                     </div>
                 </div>
 
