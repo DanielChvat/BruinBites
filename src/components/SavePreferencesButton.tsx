@@ -30,10 +30,8 @@ export default function SavePreferencesButton({
         try {
             await saveUserPreferences({
                 preferenceFilters: dietaryPreferences,
-                ingredientFilters: [
-                    ...excludedAllergens,
-                    ...excludedIngredients,
-                ],
+                allergenFilters: excludedAllergens,
+                ingredientFilters: excludedIngredients,
                 favoriteDishes: [], // We'll implement this later
             });
             setSaveStatus("success");

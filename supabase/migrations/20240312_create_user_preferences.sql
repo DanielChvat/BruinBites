@@ -2,6 +2,7 @@
 CREATE TABLE IF NOT EXISTS user_preferences (
     user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     preference_filters TEXT[] DEFAULT '{}',
+    allergen_filters TEXT[] DEFAULT '{}',
     ingredient_filters TEXT[] DEFAULT '{}',
     favorite_dishes TEXT[] DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,

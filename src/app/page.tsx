@@ -102,6 +102,11 @@ export default function Home() {
         if (preferences && !loadingPreferences) {
             // Load preference filters
             setSelectedTags(preferences.preferenceFilters);
+            // Load allergen filters
+            setSelectedTags((prev) => [
+                ...prev,
+                ...preferences.allergenFilters,
+            ]);
             // Load ingredient filters
             setExcludedIngredients(preferences.ingredientFilters);
         }

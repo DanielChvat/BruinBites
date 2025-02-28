@@ -4,6 +4,7 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 export interface UserPreferences {
     preferenceFilters: string[];
+    allergenFilters: string[];
     ingredientFilters: string[];
     favoriteDishes: string[];
 }
@@ -21,6 +22,7 @@ export async function saveUserPreferences(preferences: UserPreferences) {
     const { error } = await supabase.from("user_preferences").upsert({
         user_id: user.id,
         preference_filters: preferences.preferenceFilters,
+        allergen_filters: preferences.allergenFilters,
         ingredient_filters: preferences.ingredientFilters,
         favorite_dishes: preferences.favoriteDishes,
         updated_at: new Date().toISOString(),
@@ -48,6 +50,7 @@ export async function getUserPreferences(): Promise<UserPreferences | null> {
 
     return {
         preferenceFilters: data.preference_filters || [],
+        allergenFilters: data.allergen_filters || [],
         ingredientFilters: data.ingredient_filters || [],
         favoriteDishes: data.favorite_dishes || [],
     };
