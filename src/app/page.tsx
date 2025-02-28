@@ -50,13 +50,9 @@ export default function Home() {
 
             // Match the meal periods from the database
             let period;
-            if (time < 7 * 60) period = "Late Night"; // Before 7am (0-6:59)
-            else if (time < 10 * 60) period = "Breakfast"; // 7am-9:59
-            else if (time < 11 * 60) period = "Breakfast"; // 10am-10:59
-            else if (time < 14 * 60) period = "Lunch"; // 11am-1:59pm
-            else if (time < 17 * 60) period = "Lunch"; // 2pm-4:59pm
-            else if (time < 21 * 60) period = "Dinner"; // 5pm-8:59pm
-            else period = "Late Night"; // 9pm onwards
+            if (time < 10 * 60) period = "Breakfast"; // 12am-10am
+            else if (time < 15 * 60) period = "Lunch"; // 10am-3pm
+            else period = "Dinner"; // 3pm-12am
 
             setCurrentMealPeriod(period);
         }
