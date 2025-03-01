@@ -357,6 +357,13 @@ export default function Home() {
                                 Loading dishes...
                             </p>
                         </div>
+                    ) : selectedDiningHall === "EPICURIA" &&
+                      currentMealPeriod === "Breakfast" ? (
+                        <div className="text-center py-12">
+                            <p className="text-gray-600">
+                                Epicuria is closed during breakfast hours.
+                            </p>
+                        </div>
                     ) : dishes.length === 0 ? (
                         <div className="text-center py-12 bg-white rounded-lg shadow">
                             <p className="text-gray-600">

@@ -49,6 +49,14 @@ export async function getDishes(
     selectedTags: string[] = [],
     excludedIngredients: string[] = []
 ): Promise<Dish[]> {
+    // Return empty array if Epicuria is selected during breakfast
+    if (
+        diningHallCode === "EPICURIA" &&
+        getCurrentMealPeriod() === "Breakfast"
+    ) {
+        return [];
+    }
+
     // Normalize excluded ingredients once
     const normalizedExcludedIngredients = new Set(
         excludedIngredients.map((i) => i.toLowerCase())
