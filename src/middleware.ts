@@ -17,9 +17,10 @@ export async function middleware(req: NextRequest) {
         const domain = email?.split("@")[1];
 
         if (!allowedDomains.includes(domain || "")) {
-            // If domain is not allowed, sign out the user
-            await supabase.auth.signOut();
-            return NextResponse.redirect(new URL("/", req.url));
+            // Instead of signing out, redirect to an error page
+            return NextResponse.redirect(
+                new URL("/auth/unauthorized", req.url)
+            );
         }
     }
 
@@ -27,5 +28,7 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+    matcher: [
+        "/((?!api|_next/static|_next/image|favicon.ico|auth/unauthorized).*)",
+    ],
 };
