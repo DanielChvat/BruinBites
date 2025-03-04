@@ -322,3 +322,93 @@ export async function getAllIngredients(): Promise<string[]> {
 
     return data.map((ingredient) => ingredient.name);
 }
+
+export async function addToFavorites(dishId: number): Promise<boolean> {
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase.from("user_favorites").insert([
+        {
+            user_id: user.id,
+            dish_id: dishId,
+        },
+    ]);
+
+    return !error;
+}
+
+export async function removeFromFavorites(dishId: number): Promise<boolean> {
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+        .from("user_favorites")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("dish_id", dishId);
+
+    return !error;
+}
+
+export async function getFavorites(): Promise<Dish[]> {
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+        .from("user_favorites")
+        .select(
+            `
+            dish_id,
+            dishes (
+                id,
+                name,
+                dining_hall_id,
+                recipe_url,
+                created_at,
+                updated_at,
+                dining_halls!dishes_dining_hall_id_fkey(code),
+                dish_dietary_tags!left(
+                    dietary_tags!left(code)
+                ),
+                dish_ingredients!left(
+                    ingredients!left(name)
+                )
+            )
+        `
+        )
+        .eq("user_id", user.id);
+
+    if (error) return [];
+
+    return data.map((favorite: any) => ({
+        ...favorite.dishes,
+        dietary_tags: (favorite.dishes.dish_dietary_tags || [])
+            .map((tag: any) => tag.dietary_tags?.code)
+            .filter(Boolean),
+        ingredients: (favorite.dishes.dish_ingredients || [])
+            .map((ingredient: any) => ingredient.ingredients?.name)
+            .filter(Boolean),
+    }));
+}
+
+export async function isFavorite(dishId: number): Promise<boolean> {
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data, error } = await supabase
+        .from("user_favorites")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("dish_id", dishId)
+        .single();
+
+    return !error && !!data;
+}
