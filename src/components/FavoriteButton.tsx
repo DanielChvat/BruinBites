@@ -3,7 +3,7 @@ import { HeartIcon } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
 import { addToFavorites, removeFromFavorites, isFavorite } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
-import LoginButton from "./LoginButton";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface FavoriteButtonProps {
     dishId: number;
@@ -16,27 +16,29 @@ export default function FavoriteButton({
 }: FavoriteButtonProps) {
     const [isFavorited, setIsFavorited] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const { user, signInWithGoogle } = useAuth();
 
     useEffect(() => {
-        checkAuthAndFavoriteStatus();
-    }, [dishId]);
+        checkFavoriteStatus();
+    }, [dishId, user]);
 
-    const checkAuthAndFavoriteStatus = async () => {
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
-        setIsAuthenticated(!!user);
-
-        if (user) {
-            const favoriteStatus = await isFavorite(dishId);
-            setIsFavorited(favoriteStatus);
+    const checkFavoriteStatus = async () => {
+        if (!user) {
+            setIsFavorited(false);
+            setIsLoading(false);
+            return;
         }
+
+        const favoriteStatus = await isFavorite(dishId);
+        setIsFavorited(favoriteStatus);
         setIsLoading(false);
     };
 
     const handleClick = async () => {
-        if (!isAuthenticated) return;
+        if (!user) {
+            signInWithGoogle();
+            return;
+        }
 
         setIsLoading(true);
         try {
@@ -63,21 +65,17 @@ export default function FavoriteButton({
         );
     }
 
-    if (!isAuthenticated) {
-        return (
-            <LoginButton>
-                <div className={className}>
-                    <HeartIcon className="w-6 h-6 text-gray-400" />
-                </div>
-            </LoginButton>
-        );
-    }
-
     return (
         <button
             onClick={handleClick}
             className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${className}`}
-            title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+            title={
+                !user
+                    ? "Sign in to add favorites"
+                    : isFavorited
+                    ? "Remove from favorites"
+                    : "Add to favorites"
+            }
         >
             {isFavorited ? (
                 <HeartIconSolid className="w-6 h-6 text-red-500" />
