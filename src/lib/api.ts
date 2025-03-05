@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import type { DiningHall, Dish, DietaryTag } from "./supabase";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
 // Dietary tags that should show only matching dishes
 export const PREFERENCE_TAGS = new Set(["V", "VG", "HAL", "LC", "HC"]);
@@ -47,7 +48,8 @@ function getCurrentMealPeriod(): string {
 export async function getDishes(
     diningHallCode: string,
     selectedTags: string[] = [],
-    excludedIngredients: string[] = []
+    excludedIngredients: string[] = [],
+    userId?: string
 ): Promise<Dish[]> {
     // Return empty array if Epicuria is selected during breakfast
     if (
@@ -80,7 +82,22 @@ export async function getDishes(
         today,
         preferenceTags,
         allergenTags,
+        userId,
     });
+
+    // Get user's favorites if userId is provided
+    let userFavorites: Set<number> = new Set();
+    if (userId) {
+        const supabaseClient = createClientComponentClient();
+        const { data: favorites } = await supabaseClient
+            .from("user_favorites")
+            .select("dish_id")
+            .eq("user_id", userId);
+
+        if (favorites) {
+            userFavorites = new Set(favorites.map((f) => f.dish_id));
+        }
+    }
 
     // Debug query to see what's in dish_meal_periods
     const { data: debugMealPeriods, error: debugError } = await supabase
@@ -213,6 +230,7 @@ export async function getDishes(
             meal_periods: (dish.dish_meal_periods || [])
                 .map((period: any) => period.meal_periods?.name)
                 .filter(Boolean),
+            isFavorite: userFavorites.has(dish.id),
         }))
         .filter((dish) => {
             // Only include dishes that have a meal period for today and current meal period
@@ -270,6 +288,13 @@ export async function getDishes(
             }
 
             return true;
+        })
+        .sort((a, b) => {
+            // Sort favorited dishes to the top
+            if (a.isFavorite && !b.isFavorite) return -1;
+            if (!a.isFavorite && b.isFavorite) return 1;
+            // If both are favorited or both are not, maintain original order
+            return 0;
         });
 
     console.log("Final filtered dishes:", {
@@ -285,6 +310,7 @@ export async function getDishes(
                 )
             )
         ).sort(),
+        favoritedCount: transformedDishes.filter((d) => d.isFavorite).length,
     });
 
     return transformedDishes;
@@ -323,44 +349,79 @@ export async function getAllIngredients(): Promise<string[]> {
     return data.map((ingredient) => ingredient.name);
 }
 
-export async function addToFavorites(dishId: number): Promise<boolean> {
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return false;
+export async function addToFavorites(
+    dishId: number,
+    userId: string
+): Promise<boolean> {
+    if (!userId) {
+        console.log("No user ID provided when trying to add to favorites");
+        return false;
+    }
 
-    const { error } = await supabase.from("user_favorites").insert([
-        {
-            user_id: user.id,
-            dish_id: dishId,
-        },
-    ]);
+    console.log("Adding to favorites:", { userId, dishId });
 
-    return !error;
+    // Use the authenticated client
+    const supabaseClient = createClientComponentClient();
+
+    const { data, error } = await supabaseClient
+        .from("user_favorites")
+        .upsert(
+            {
+                user_id: userId,
+                dish_id: dishId,
+            },
+            {
+                onConflict: "user_id,dish_id",
+            }
+        )
+        .select();
+
+    if (error) {
+        console.error("Error adding to favorites:", error);
+        return false;
+    }
+
+    console.log("Successfully added to favorites:", data);
+    return true;
 }
 
-export async function removeFromFavorites(dishId: number): Promise<boolean> {
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return false;
+export async function removeFromFavorites(
+    dishId: number,
+    userId: string
+): Promise<boolean> {
+    if (!userId) {
+        console.log("No user ID provided when trying to remove from favorites");
+        return false;
+    }
 
-    const { error } = await supabase
+    console.log("Removing from favorites:", { userId, dishId });
+
+    // Use the authenticated client
+    const supabaseClient = createClientComponentClient();
+
+    const { data, error } = await supabaseClient
         .from("user_favorites")
         .delete()
-        .eq("user_id", user.id)
-        .eq("dish_id", dishId);
+        .eq("user_id", userId)
+        .eq("dish_id", dishId)
+        .select();
 
-    return !error;
+    if (error) {
+        console.error("Error removing from favorites:", error);
+        return false;
+    }
+
+    console.log("Successfully removed from favorites:", data);
+    return true;
 }
 
-export async function getFavorites(): Promise<Dish[]> {
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return [];
+export async function getFavorites(userId: string): Promise<Dish[]> {
+    if (!userId) return [];
 
-    const { data, error } = await supabase
+    // Use the authenticated client
+    const supabaseClient = createClientComponentClient();
+
+    const { data, error } = await supabaseClient
         .from("user_favorites")
         .select(
             `
@@ -382,7 +443,7 @@ export async function getFavorites(): Promise<Dish[]> {
             )
         `
         )
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
 
     if (error) return [];
 
@@ -397,18 +458,32 @@ export async function getFavorites(): Promise<Dish[]> {
     }));
 }
 
-export async function isFavorite(dishId: number): Promise<boolean> {
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return false;
+export async function isFavorite(
+    dishId: number,
+    userId: string
+): Promise<boolean> {
+    if (!userId) {
+        console.log("No user ID provided when checking favorite status");
+        return false;
+    }
 
-    const { data, error } = await supabase
+    console.log("Checking favorite status:", { userId, dishId });
+
+    // Use the authenticated client
+    const supabaseClient = createClientComponentClient();
+
+    const { data, error } = await supabaseClient
         .from("user_favorites")
         .select("id")
-        .eq("user_id", user.id)
-        .eq("dish_id", dishId)
-        .single();
+        .eq("user_id", userId)
+        .eq("dish_id", dishId);
 
-    return !error && !!data;
+    if (error) {
+        console.error("Error checking favorite status:", error);
+        return false;
+    }
+
+    const isFavorite = data && data.length > 0;
+    console.log("Favorite status:", { isFavorite });
+    return isFavorite;
 }

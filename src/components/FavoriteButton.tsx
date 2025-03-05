@@ -19,36 +19,58 @@ export default function FavoriteButton({
     const { user, signInWithGoogle } = useAuth();
 
     useEffect(() => {
+        console.log("FavoriteButton mounted/updated:", {
+            dishId,
+            userId: user?.id,
+        });
         checkFavoriteStatus();
     }, [dishId, user]);
 
     const checkFavoriteStatus = async () => {
         if (!user) {
+            console.log("No user, setting isFavorited to false");
             setIsFavorited(false);
             setIsLoading(false);
             return;
         }
 
-        const favoriteStatus = await isFavorite(dishId);
+        console.log("Checking favorite status for:", {
+            dishId,
+            userId: user.id,
+        });
+        const favoriteStatus = await isFavorite(dishId, user.id);
+        console.log("Favorite status result:", {
+            dishId,
+            isFavorited: favoriteStatus,
+        });
         setIsFavorited(favoriteStatus);
         setIsLoading(false);
     };
 
     const handleClick = async () => {
         if (!user) {
+            console.log("No user, triggering sign in");
             signInWithGoogle();
             return;
         }
 
+        console.log("Handling favorite button click:", {
+            dishId,
+            currentStatus: isFavorited,
+        });
         setIsLoading(true);
         try {
             if (isFavorited) {
-                const success = await removeFromFavorites(dishId);
+                const success = await removeFromFavorites(dishId, user.id);
+                console.log("Remove from favorites result:", { success });
                 if (success) setIsFavorited(false);
             } else {
-                const success = await addToFavorites(dishId);
+                const success = await addToFavorites(dishId, user.id);
+                console.log("Add to favorites result:", { success });
                 if (success) setIsFavorited(true);
             }
+        } catch (error) {
+            console.error("Error handling favorite button click:", error);
         } finally {
             setIsLoading(false);
         }
