@@ -13,6 +13,7 @@ import {
 } from "@/lib/api";
 import SavePreferencesButton from "@/components/SavePreferencesButton";
 import { useSavedPreferences } from "@/hooks/useSavedPreferences";
+import FavoriteButton from "@/components/FavoriteButton";
 
 function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(" ");
@@ -376,9 +377,12 @@ export default function Home() {
                                 key={dish.id}
                                 className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
                             >
-                                <h3 className="text-xl font-medium text-gray-900">
-                                    {dish.name}
-                                </h3>
+                                <div className="flex justify-between items-start">
+                                    <h3 className="text-xl font-medium text-gray-900">
+                                        {dish.name}
+                                    </h3>
+                                    <FavoriteButton dishId={dish.id} />
+                                </div>
                                 {dish.dietary_tags && (
                                     <div className="mt-3 flex flex-wrap gap-1.5">
                                         {dish.dietary_tags.map((tagCode) => {
