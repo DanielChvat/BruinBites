@@ -14,6 +14,7 @@ import {
 import SavePreferencesButton from "@/components/SavePreferencesButton";
 import { useSavedPreferences } from "@/hooks/useSavedPreferences";
 import FavoriteButton from "@/components/FavoriteButton";
+import { useAuth } from "@/contexts/AuthContext";
 
 function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(" ");
@@ -33,6 +34,7 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [currentMealPeriod, setCurrentMealPeriod] = useState<string>("");
     const { preferences, loading: loadingPreferences } = useSavedPreferences();
+    const { user } = useAuth();
 
     const diningHalls = [
         { name: "Epicuria", code: "EPICURIA" },
@@ -86,13 +88,14 @@ export default function Home() {
             const newDishes = await getDishes(
                 selectedDiningHall,
                 selectedTags,
-                excludedIngredients
+                excludedIngredients,
+                user?.id
             );
             setDishes(newDishes);
             setLoading(false);
         }
         fetchDishes();
-    }, [selectedDiningHall, selectedTags, excludedIngredients]);
+    }, [selectedDiningHall, selectedTags, excludedIngredients, user?.id]);
 
     // Load saved preferences when they become available
     useEffect(() => {
