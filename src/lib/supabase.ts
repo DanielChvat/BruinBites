@@ -25,6 +25,11 @@ export type Dish = {
     updated_at: string;
     dietary_tags?: string[];
     ingredients?: string[];
+    rating?: {
+        average: number;
+        count: number;
+        userRating?: number;
+    };
 };
 
 export type Ingredient = {
