@@ -218,91 +218,94 @@ export async function getDishes(
     });
 
     // Transform and filter the data
-    const transformedDishes = allDishes
-        .map((dish: any) => ({
-            ...dish,
-            dietary_tags: (dish.dish_dietary_tags || [])
-                .map((tag: any) => tag.dietary_tags?.code)
-                .filter(Boolean),
-            ingredients: (dish.dish_ingredients || [])
-                .map((ingredient: any) => ingredient.ingredients?.name)
-                .filter(Boolean),
-            meal_periods: (dish.dish_meal_periods || [])
-                .map((period: any) => period.meal_periods?.name)
-                .filter(Boolean),
-            isFavorite: userFavorites.has(dish.id),
-        }))
-        .filter((dish) => {
-            // Only include dishes that have a meal period for today and current meal period
-            const hasMealPeriod = dish.dish_meal_periods?.some(
-                (period: any) => {
-                    const matches =
-                        period.date === today &&
-                        period.meal_periods?.name === currentMealPeriod &&
-                        period.dining_hall_id ===
-                            getDiningHallId(diningHallCode);
-                    if (!matches) {
-                        console.log("Dish filtered out:", {
-                            name: dish.name,
-                            date: period.date,
-                            expected_date: today,
-                            period_name: period.meal_periods?.name,
-                            expected_period: currentMealPeriod,
-                            dining_hall_id: period.dining_hall_id,
-                            expected_dining_hall_id:
-                                getDiningHallId(diningHallCode),
-                            date_matches: period.date === today,
-                            period_matches:
-                                period.meal_periods?.name === currentMealPeriod,
-                            dining_hall_matches:
-                                period.dining_hall_id ===
-                                getDiningHallId(diningHallCode),
-                        });
-                    }
-                    return matches;
-                }
-            );
+    const transformedDishes = await Promise.all(
+        allDishes.map(async (dish: any) => {
+            // Get rating information for each dish
+            const rating = await getDishRating(dish.id, userId);
 
-            if (!hasMealPeriod) {
-                return false;
-            }
-
-            // Filter out dishes with selected allergen tags
-            if (
-                allergenTags.length > 0 &&
-                dish.dietary_tags.some((tag: string) =>
-                    allergenTags.includes(tag)
-                )
-            ) {
-                return false;
-            }
-
-            // Filter out dishes with excluded ingredients
-            if (
-                normalizedExcludedIngredients.size > 0 &&
-                dish.ingredients.some((ingredient: string) =>
-                    normalizedExcludedIngredients.has(ingredient.toLowerCase())
-                )
-            ) {
-                return false;
-            }
-
-            return true;
+            return {
+                ...dish,
+                dietary_tags: (dish.dish_dietary_tags || [])
+                    .map((tag: any) => tag.dietary_tags?.code)
+                    .filter(Boolean),
+                ingredients: (dish.dish_ingredients || [])
+                    .map((ingredient: any) => ingredient.ingredients?.name)
+                    .filter(Boolean),
+                meal_periods: (dish.dish_meal_periods || [])
+                    .map((period: any) => period.meal_periods?.name)
+                    .filter(Boolean),
+                isFavorite: userFavorites.has(dish.id),
+                rating,
+            };
         })
-        .sort((a, b) => {
-            // Sort favorited dishes to the top
-            if (a.isFavorite && !b.isFavorite) return -1;
-            if (!a.isFavorite && b.isFavorite) return 1;
-            // If both are favorited or both are not, maintain original order
-            return 0;
+    );
+
+    // Filter the dishes
+    const filteredDishes = transformedDishes.filter((dish) => {
+        // Only include dishes that have a meal period for today and current meal period
+        const hasMealPeriod = dish.dish_meal_periods?.some((period: any) => {
+            const matches =
+                period.date === today &&
+                period.meal_periods?.name === currentMealPeriod &&
+                period.dining_hall_id === getDiningHallId(diningHallCode);
+            if (!matches) {
+                console.log("Dish filtered out:", {
+                    name: dish.name,
+                    date: period.date,
+                    expected_date: today,
+                    period_name: period.meal_periods?.name,
+                    expected_period: currentMealPeriod,
+                    dining_hall_id: period.dining_hall_id,
+                    expected_dining_hall_id: getDiningHallId(diningHallCode),
+                    date_matches: period.date === today,
+                    period_matches:
+                        period.meal_periods?.name === currentMealPeriod,
+                    dining_hall_matches:
+                        period.dining_hall_id ===
+                        getDiningHallId(diningHallCode),
+                });
+            }
+            return matches;
         });
 
+        if (!hasMealPeriod) {
+            return false;
+        }
+
+        // Filter out dishes with selected allergen tags
+        if (
+            allergenTags.length > 0 &&
+            dish.dietary_tags.some((tag: string) => allergenTags.includes(tag))
+        ) {
+            return false;
+        }
+
+        // Filter out dishes with excluded ingredients
+        if (
+            normalizedExcludedIngredients.size > 0 &&
+            dish.ingredients.some((ingredient: string) =>
+                normalizedExcludedIngredients.has(ingredient.toLowerCase())
+            )
+        ) {
+            return false;
+        }
+
+        return true;
+    });
+
+    // Sort favorited dishes to the top
+    const sortedDishes = filteredDishes.sort((a, b) => {
+        if (a.isFavorite && !b.isFavorite) return -1;
+        if (!a.isFavorite && b.isFavorite) return 1;
+        return 0;
+    });
+
     console.log("Final filtered dishes:", {
-        totalFiltered: transformedDishes.length,
-        firstFilteredDish: transformedDishes[0],
+        totalFiltered: sortedDishes.length,
+        firstFilteredDish: sortedDishes[0],
         uniqueDates: Array.from(
             new Set(
-                transformedDishes.flatMap(
+                sortedDishes.flatMap(
                     (d) =>
                         d.dish_meal_periods?.map(
                             (mp: { date: string }) => mp.date
@@ -310,10 +313,10 @@ export async function getDishes(
                 )
             )
         ).sort(),
-        favoritedCount: transformedDishes.filter((d) => d.isFavorite).length,
+        favoritedCount: sortedDishes.filter((d) => d.isFavorite).length,
     });
 
-    return transformedDishes;
+    return sortedDishes;
 }
 
 export async function getDietaryTags(): Promise<DietaryTag[]> {
@@ -486,4 +489,91 @@ export async function isFavorite(
     const isFavorite = data && data.length > 0;
     console.log("Favorite status:", { isFavorite });
     return isFavorite;
+}
+
+export async function rateDish(
+    dishId: number,
+    rating: number,
+    userId: string
+): Promise<boolean> {
+    if (!userId) {
+        console.log("No user ID provided when trying to rate dish");
+        return false;
+    }
+
+    if (rating < 1 || rating > 5) {
+        console.log("Invalid rating value");
+        return false;
+    }
+
+    console.log("Rating dish:", { userId, dishId, rating });
+
+    // Use the authenticated client
+    const supabaseClient = createClientComponentClient();
+
+    const { data, error } = await supabaseClient
+        .from("dish_ratings")
+        .upsert(
+            {
+                user_id: userId,
+                dish_id: dishId,
+                rating: rating,
+            },
+            {
+                onConflict: "user_id,dish_id",
+            }
+        )
+        .select();
+
+    if (error) {
+        console.error("Error rating dish:", error);
+        return false;
+    }
+
+    console.log("Successfully rated dish:", data);
+    return true;
+}
+
+export async function getDishRating(
+    dishId: number,
+    userId?: string
+): Promise<{ average: number; count: number; userRating?: number }> {
+    const supabaseClient = createClientComponentClient();
+
+    // Get all ratings for the dish
+    const { data: ratings, error: ratingsError } = await supabaseClient
+        .from("dish_ratings")
+        .select("rating")
+        .eq("dish_id", dishId);
+
+    if (ratingsError) {
+        console.error("Error fetching dish ratings:", ratingsError);
+        return { average: 0, count: 0 };
+    }
+
+    // Calculate average and count
+    const count = ratings.length;
+    const average =
+        count > 0 ? ratings.reduce((sum, r) => sum + r.rating, 0) / count : 0;
+
+    // If user is logged in, get their rating
+    let userRating: number | undefined;
+    if (userId) {
+        const { data: userRatingData } = await supabaseClient
+            .from("dish_ratings")
+            .select("rating")
+            .eq("dish_id", dishId)
+            .eq("user_id", userId)
+            .single();
+
+        if (userRatingData) {
+            userRating = userRatingData.rating;
+        }
+    }
+
+    return {
+        average: Number(average.toFixed(1)),
+        count,
+        userRating,
+    };
 }
