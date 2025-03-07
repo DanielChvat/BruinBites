@@ -382,38 +382,42 @@ export default function Home() {
                                 className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
                             >
                                 <div className="flex justify-between items-start">
-                                    <h3 className="text-xl font-medium text-gray-900">
-                                        {dish.name}
-                                    </h3>
+                                    <div className="flex items-center gap-4">
+                                        <h3 className="text-xl font-medium text-gray-900">
+                                            {dish.name}
+                                        </h3>
+                                        {dish.rating && (
+                                            <RatingStars
+                                                dishId={dish.id}
+                                                averageRating={
+                                                    dish.rating.average
+                                                }
+                                                ratingCount={dish.rating.count}
+                                                userRating={
+                                                    dish.rating.userRating
+                                                }
+                                                onRatingChange={(newRating) => {
+                                                    // Update the dish's rating in the local state
+                                                    setDishes((prevDishes) =>
+                                                        prevDishes.map((d) =>
+                                                            d.id === dish.id
+                                                                ? {
+                                                                      ...d,
+                                                                      rating: {
+                                                                          ...d.rating!,
+                                                                          userRating:
+                                                                              newRating,
+                                                                      },
+                                                                  }
+                                                                : d
+                                                        )
+                                                    );
+                                                }}
+                                            />
+                                        )}
+                                    </div>
                                     <FavoriteButton dishId={dish.id} />
                                 </div>
-                                {dish.rating && (
-                                    <div className="mt-2">
-                                        <RatingStars
-                                            dishId={dish.id}
-                                            averageRating={dish.rating.average}
-                                            ratingCount={dish.rating.count}
-                                            userRating={dish.rating.userRating}
-                                            onRatingChange={(newRating) => {
-                                                // Update the dish's rating in the local state
-                                                setDishes((prevDishes) =>
-                                                    prevDishes.map((d) =>
-                                                        d.id === dish.id
-                                                            ? {
-                                                                  ...d,
-                                                                  rating: {
-                                                                      ...d.rating!,
-                                                                      userRating:
-                                                                          newRating,
-                                                                  },
-                                                              }
-                                                            : d
-                                                    )
-                                                );
-                                            }}
-                                        />
-                                    </div>
-                                )}
                                 {dish.dietary_tags && (
                                     <div className="mt-3 flex flex-wrap gap-1.5">
                                         {dish.dietary_tags.map((tagCode) => {
