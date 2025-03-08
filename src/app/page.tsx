@@ -154,14 +154,14 @@ export default function Home() {
     const allergenTags = dietaryTags.filter((tag) => tag.isAllergen);
 
     return (
-        <div className="min-h-screen bg-gray-100 py-8">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">
+        <div className="min-h-screen bg-gray-100 py-4 sm:py-8">
+            <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 mb-6 sm:mb-8">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                         BruinBites
                     </h1>
-                    <div className="flex items-center gap-4">
-                        <div className="text-lg text-gray-600">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+                        <div className="text-base sm:text-lg text-gray-600">
                             Showing menu for:{" "}
                             <span className="font-semibold capitalize">
                                 {currentMealPeriod}
@@ -186,7 +186,7 @@ export default function Home() {
                                 key={hall.code}
                                 className={({ selected }) =>
                                     classNames(
-                                        "w-full rounded-lg py-2.5 text-sm font-medium leading-5",
+                                        "w-full rounded-lg py-2 sm:py-2.5 text-xs sm:text-sm font-medium leading-5",
                                         "ring-white/60 ring-offset-2 ring-offset-ucla-blue focus:outline-none focus:ring-2",
                                         selected
                                             ? "bg-white text-ucla-blue shadow"
@@ -201,9 +201,9 @@ export default function Home() {
                     </Tab.List>
                 </Tab.Group>
 
-                <div className="mt-8">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-semibold text-gray-900">
+                <div className="mt-6 sm:mt-8">
+                    <div className="flex justify-between items-center mb-3 sm:mb-4">
+                        <h2 className="text-base sm:text-lg font-semibold text-gray-900">
                             Dietary Preferences
                         </h2>
                         {selectedTags.some((tag) =>
@@ -211,19 +211,19 @@ export default function Home() {
                         ) && (
                             <button
                                 onClick={clearPreferenceTags}
-                                className="text-sm text-gray-500 hover:text-gray-700"
+                                className="text-xs sm:text-sm text-gray-500 hover:text-gray-700"
                             >
                                 Clear preferences
                             </button>
                         )}
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                         {preferenceTags.map((tag) => (
                             <button
                                 key={tag.code}
                                 onClick={() => toggleTag(tag.code)}
                                 className={classNames(
-                                    "px-3 py-1 rounded-full text-sm font-medium transition-colors",
+                                    "px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors",
                                     selectedTags.includes(tag.code)
                                         ? "bg-ucla-blue text-white"
                                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -237,26 +237,26 @@ export default function Home() {
                 </div>
 
                 <div className="mt-4">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-semibold text-gray-900">
+                    <div className="flex justify-between items-center mb-3 sm:mb-4">
+                        <h2 className="text-base sm:text-lg font-semibold text-gray-900">
                             Exclude Allergens
                         </h2>
                         {selectedTags.some((tag) => ALLERGEN_TAGS.has(tag)) && (
                             <button
                                 onClick={clearAllergenTags}
-                                className="text-sm text-gray-500 hover:text-gray-700"
+                                className="text-xs sm:text-sm text-gray-500 hover:text-gray-700"
                             >
                                 Clear allergens
                             </button>
                         )}
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                         {allergenTags.map((tag) => (
                             <button
                                 key={tag.code}
                                 onClick={() => toggleTag(tag.code)}
                                 className={classNames(
-                                    "px-3 py-1 rounded-full text-sm font-medium transition-colors",
+                                    "px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors",
                                     selectedTags.includes(tag.code)
                                         ? "bg-red-600 text-white"
                                         : "bg-red-100 text-red-700 hover:bg-red-200"
@@ -269,109 +269,28 @@ export default function Home() {
                     </div>
                 </div>
 
-                <div className="mt-8">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-semibold text-gray-900">
-                            Exclude Ingredients
-                        </h2>
-                        {excludedIngredients.length > 0 && (
-                            <button
-                                onClick={() => setExcludedIngredients([])}
-                                className="text-sm text-gray-500 hover:text-gray-700"
-                            >
-                                Clear ingredients
-                            </button>
-                        )}
-                    </div>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {excludedIngredients.map((ingredient) => (
-                            <span
-                                key={ingredient}
-                                className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm"
-                            >
-                                {ingredient}
-                                <button
-                                    onClick={() => removeIngredient(ingredient)}
-                                    className="hover:text-red-900"
-                                >
-                                    ×
-                                </button>
-                            </span>
-                        ))}
-                    </div>
-                    <Combobox
-                        value=""
-                        onChange={(ingredient) => {
-                            if (
-                                ingredient &&
-                                !excludedIngredients.includes(ingredient)
-                            ) {
-                                setExcludedIngredients((prev) => [
-                                    ...prev,
-                                    ingredient,
-                                ]);
-                            }
-                        }}
-                    >
-                        <div className="relative">
-                            <Combobox.Input
-                                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-ucla-blue focus:ring-ucla-blue"
-                                placeholder="Type to search ingredients..."
-                                onChange={(event) =>
-                                    setIngredientQuery(event.target.value)
-                                }
-                            />
-                            <Combobox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                                {filteredIngredients.map((ingredient) => (
-                                    <Combobox.Option
-                                        key={ingredient}
-                                        value={ingredient}
-                                        className={({ active }) =>
-                                            classNames(
-                                                "relative cursor-pointer select-none py-2 pl-3 pr-9",
-                                                active
-                                                    ? "bg-ucla-blue text-white"
-                                                    : "text-gray-900"
-                                            )
-                                        }
-                                    >
-                                        {ingredient}
-                                    </Combobox.Option>
-                                ))}
-                            </Combobox.Options>
-                        </div>
-                    </Combobox>
-                </div>
-
-                <div className="mt-8 space-y-4">
+                <div className="mt-6 sm:mt-8 space-y-3 sm:space-y-4">
                     {(selectedTags.length > 0 ||
                         excludedIngredients.length > 0) && (
                         <div className="flex justify-end">
                             <button
                                 onClick={clearAllFilters}
-                                className="text-sm text-ucla-blue hover:text-ucla-blue/80 font-medium"
+                                className="text-xs sm:text-sm text-ucla-blue hover:text-ucla-blue/80 font-medium"
                             >
                                 Clear all filters
                             </button>
                         </div>
                     )}
                     {loading ? (
-                        <div className="text-center py-12">
-                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-ucla-blue"></div>
-                            <p className="mt-2 text-gray-600">
+                        <div className="text-center py-8 sm:py-12">
+                            <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-t-2 border-b-2 border-ucla-blue"></div>
+                            <p className="mt-2 text-sm sm:text-base text-gray-600">
                                 Loading dishes...
                             </p>
                         </div>
-                    ) : selectedDiningHall === "EPICURIA" &&
-                      currentMealPeriod === "Breakfast" ? (
-                        <div className="text-center py-12">
-                            <p className="text-gray-600">
-                                Epicuria is closed during breakfast hours.
-                            </p>
-                        </div>
                     ) : dishes.length === 0 ? (
-                        <div className="text-center py-12 bg-white rounded-lg shadow">
-                            <p className="text-gray-600">
+                        <div className="text-center py-8 sm:py-12 bg-white rounded-lg shadow">
+                            <p className="text-sm sm:text-base text-gray-600">
                                 No dishes found with the selected filters
                             </p>
                         </div>
@@ -379,11 +298,11 @@ export default function Home() {
                         dishes.map((dish) => (
                             <div
                                 key={dish.id}
-                                className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                                className="bg-white p-4 sm:p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
                             >
-                                <div className="flex justify-between items-start">
-                                    <div className="flex items-center gap-4">
-                                        <h3 className="text-xl font-medium text-gray-900">
+                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                        <h3 className="text-lg sm:text-xl font-medium text-gray-900">
                                             {dish.name}
                                         </h3>
                                         {dish.rating && (
@@ -396,30 +315,18 @@ export default function Home() {
                                                 userRating={
                                                     dish.rating.userRating
                                                 }
-                                                onRatingChange={(newRating) => {
-                                                    // Update the dish's rating in the local state
-                                                    setDishes((prevDishes) =>
-                                                        prevDishes.map((d) =>
-                                                            d.id === dish.id
-                                                                ? {
-                                                                      ...d,
-                                                                      rating: {
-                                                                          ...d.rating!,
-                                                                          userRating:
-                                                                              newRating,
-                                                                      },
-                                                                  }
-                                                                : d
-                                                        )
-                                                    );
-                                                }}
                                             />
                                         )}
                                     </div>
-                                    <FavoriteButton dishId={dish.id} />
+                                    {user && (
+                                        <FavoriteButton
+                                            dishId={dish.id}
+                                            initialIsFavorite={dish.isFavorite}
+                                        />
+                                    )}
                                 </div>
                                 {dish.dietary_tags && (
-                                    <div className="mt-3 flex flex-wrap gap-1.5">
+                                    <div className="mt-2 sm:mt-3 flex flex-wrap gap-1 sm:gap-1.5">
                                         {dish.dietary_tags.map((tagCode) => {
                                             const tag = dietaryTags.find(
                                                 (t) => t.code === tagCode
@@ -429,7 +336,7 @@ export default function Home() {
                                                 <span
                                                     key={tagCode}
                                                     className={classNames(
-                                                        "px-2 py-0.5 rounded-full text-xs font-medium",
+                                                        "px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium",
                                                         tag.isPreference
                                                             ? "bg-ucla-blue/10 text-ucla-blue"
                                                             : "bg-red-100 text-red-700"
@@ -443,7 +350,7 @@ export default function Home() {
                                     </div>
                                 )}
                                 {dish.ingredients && (
-                                    <div className="mt-2 text-sm text-gray-500">
+                                    <div className="mt-2 text-xs sm:text-sm text-gray-500">
                                         {dish.ingredients.join(", ")}
                                     </div>
                                 )}
