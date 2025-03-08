@@ -8,16 +8,16 @@ export default function Navbar() {
 
     return (
         <nav className="bg-ucla-blue shadow-lg">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-16 items-center">
+            <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
+                <div className="flex justify-between h-14 sm:h-16 items-center">
                     <div className="flex-shrink-0">
-                        <h1 className="text-2xl font-bold text-white">
+                        <h1 className="text-xl sm:text-2xl font-bold text-white">
                             BruinBites
                         </h1>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4">
                         {user && (
-                            <span className="text-white text-sm">
+                            <span className="hidden sm:inline text-white text-sm">
                                 Welcome,{" "}
                                 {user.user_metadata?.full_name ||
                                     user.email?.split("@")[0]}
