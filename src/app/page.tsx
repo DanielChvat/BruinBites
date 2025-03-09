@@ -298,10 +298,18 @@ export default function Home() {
                         dishes.map((dish) => (
                             <div
                                 key={dish.id}
-                                className="bg-white p-4 sm:p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                                className="bg-white p-4 sm:p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow relative"
                             >
-                                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0">
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                                {user && (
+                                    <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+                                        <FavoriteButton
+                                            dishId={dish.id}
+                                            initialIsFavorite={dish.isFavorite}
+                                        />
+                                    </div>
+                                )}
+                                <div className="pr-8 sm:pr-10">
+                                    <div className="flex flex-col gap-2">
                                         <h3 className="text-lg sm:text-xl font-medium text-gray-900">
                                             {dish.name}
                                         </h3>
@@ -318,42 +326,43 @@ export default function Home() {
                                             />
                                         )}
                                     </div>
-                                    {user && (
-                                        <FavoriteButton
-                                            dishId={dish.id}
-                                            initialIsFavorite={dish.isFavorite}
-                                        />
+                                    {dish.dietary_tags && (
+                                        <div className="mt-2 sm:mt-3 flex flex-wrap gap-1 sm:gap-1.5">
+                                            {dish.dietary_tags.map(
+                                                (tagCode) => {
+                                                    const tag =
+                                                        dietaryTags.find(
+                                                            (t) =>
+                                                                t.code ===
+                                                                tagCode
+                                                        );
+                                                    if (!tag) return null;
+                                                    return (
+                                                        <span
+                                                            key={tagCode}
+                                                            className={classNames(
+                                                                "px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium",
+                                                                tag.isPreference
+                                                                    ? "bg-ucla-blue/10 text-ucla-blue"
+                                                                    : "bg-red-100 text-red-700"
+                                                            )}
+                                                            title={
+                                                                tag.description
+                                                            }
+                                                        >
+                                                            {tag.name}
+                                                        </span>
+                                                    );
+                                                }
+                                            )}
+                                        </div>
+                                    )}
+                                    {dish.ingredients && (
+                                        <div className="mt-2 text-xs sm:text-sm text-gray-500">
+                                            {dish.ingredients.join(", ")}
+                                        </div>
                                     )}
                                 </div>
-                                {dish.dietary_tags && (
-                                    <div className="mt-2 sm:mt-3 flex flex-wrap gap-1 sm:gap-1.5">
-                                        {dish.dietary_tags.map((tagCode) => {
-                                            const tag = dietaryTags.find(
-                                                (t) => t.code === tagCode
-                                            );
-                                            if (!tag) return null;
-                                            return (
-                                                <span
-                                                    key={tagCode}
-                                                    className={classNames(
-                                                        "px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium",
-                                                        tag.isPreference
-                                                            ? "bg-ucla-blue/10 text-ucla-blue"
-                                                            : "bg-red-100 text-red-700"
-                                                    )}
-                                                    title={tag.description}
-                                                >
-                                                    {tag.name}
-                                                </span>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                                {dish.ingredients && (
-                                    <div className="mt-2 text-xs sm:text-sm text-gray-500">
-                                        {dish.ingredients.join(", ")}
-                                    </div>
-                                )}
                             </div>
                         ))
                     )}

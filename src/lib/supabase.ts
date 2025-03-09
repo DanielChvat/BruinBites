@@ -16,13 +16,16 @@ export type DiningHall = {
     code: string;
 };
 
-export type Dish = {
+export interface Dish {
     id: number;
     name: string;
     dining_hall_id: number;
-    recipe_url: string;
+    recipe_url?: string;
     created_at: string;
     updated_at: string;
+    dining_halls?: {
+        code: string;
+    };
     dietary_tags?: string[];
     ingredients?: string[];
     rating?: {
@@ -30,7 +33,8 @@ export type Dish = {
         count: number;
         userRating?: number;
     };
-};
+    isFavorite?: boolean;
+}
 
 export type Ingredient = {
     id: number;
