@@ -40,7 +40,7 @@ export default function FavoriteButton({
         <button
             onClick={toggleFavorite}
             disabled={isLoading}
-            className={`p-1 rounded-full hover:bg-gray-100 transition-colors ${
+            className={`p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
                 isLoading ? "opacity-50 cursor-not-allowed" : ""
             }`}
             aria-label={
@@ -50,7 +50,7 @@ export default function FavoriteButton({
             {isFavorite ? (
                 <HeartSolidIcon className="h-6 w-6 text-red-500" />
             ) : (
-                <HeartIcon className="h-6 w-6 text-gray-400 hover:text-red-500" />
+                <HeartIcon className="h-6 w-6 text-gray-400 dark:text-gray-500 hover:text-red-500" />
             )}
         </button>
     );

@@ -50,17 +50,17 @@ export default function SavePreferencesButton({
             <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-ucla-blue hover:bg-ucla-blue/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ucla-blue disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent text-xs sm:text-sm font-medium rounded-md shadow-sm text-white bg-ucla-blue hover:bg-ucla-blue/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ucla-blue disabled:opacity-50 disabled:cursor-not-allowed dark:focus:ring-offset-gray-900"
             >
                 {isSaving ? "Saving..." : "Save Preferences"}
             </button>
             {saveStatus === "success" && (
-                <span className="text-sm text-green-600">
+                <span className="text-sm text-green-600 dark:text-green-400">
                     Preferences saved!
                 </span>
             )}
             {saveStatus === "error" && (
-                <span className="text-sm text-red-600">
+                <span className="text-sm text-red-600 dark:text-red-400">
                     Failed to save preferences
                 </span>
             )}

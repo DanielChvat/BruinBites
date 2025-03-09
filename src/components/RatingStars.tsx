@@ -84,7 +84,7 @@ export default function RatingStars({
                                     className={`h-4 w-4 sm:h-5 sm:w-5 ${
                                         isHovered
                                             ? "text-yellow-400"
-                                            : "text-gray-300"
+                                            : "text-gray-300 dark:text-gray-600"
                                     }`}
                                 />
                             )}
@@ -92,7 +92,7 @@ export default function RatingStars({
                     );
                 })}
             </div>
-            <span className="text-xs sm:text-sm text-gray-500">
+            <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 ({ratingCount} {ratingCount === 1 ? "rating" : "ratings"})
             </span>
         </div>

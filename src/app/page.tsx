@@ -16,6 +16,7 @@ import { useSavedPreferences } from "@/hooks/useSavedPreferences";
 import FavoriteButton from "@/components/FavoriteButton";
 import { useAuth } from "@/contexts/AuthContext";
 import RatingStars from "@/components/RatingStars";
+import DarkModeToggle from "@/components/DarkModeToggle";
 
 function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(" ");
@@ -154,33 +155,36 @@ export default function Home() {
     const allergenTags = dietaryTags.filter((tag) => tag.isAllergen);
 
     return (
-        <div className="min-h-screen bg-gray-100 py-4 sm:py-8">
+        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-4 sm:py-8">
             <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 mb-6 sm:mb-8">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                         BruinBites
                     </h1>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                        <div className="text-base sm:text-lg text-gray-600">
+                        <div className="text-base sm:text-lg text-gray-600 dark:text-gray-300">
                             Showing menu for:{" "}
                             <span className="font-semibold capitalize">
                                 {currentMealPeriod}
                             </span>
                         </div>
-                        <SavePreferencesButton
-                            dietaryPreferences={selectedTags.filter((tag) =>
-                                PREFERENCE_TAGS.has(tag)
-                            )}
-                            excludedAllergens={selectedTags.filter((tag) =>
-                                ALLERGEN_TAGS.has(tag)
-                            )}
-                            excludedIngredients={excludedIngredients}
-                        />
+                        <div className="flex items-center gap-2">
+                            <DarkModeToggle />
+                            <SavePreferencesButton
+                                dietaryPreferences={selectedTags.filter((tag) =>
+                                    PREFERENCE_TAGS.has(tag)
+                                )}
+                                excludedAllergens={selectedTags.filter((tag) =>
+                                    ALLERGEN_TAGS.has(tag)
+                                )}
+                                excludedIngredients={excludedIngredients}
+                            />
+                        </div>
                     </div>
                 </div>
 
                 <Tab.Group>
-                    <Tab.List className="flex space-x-1 rounded-xl bg-ucla-blue/10 p-1">
+                    <Tab.List className="flex space-x-1 rounded-xl bg-ucla-blue/10 dark:bg-ucla-blue/20 p-1">
                         {diningHalls.map((hall) => (
                             <Tab
                                 key={hall.code}
@@ -189,8 +193,8 @@ export default function Home() {
                                         "w-full rounded-lg py-2 sm:py-2.5 text-xs sm:text-sm font-medium leading-5",
                                         "ring-white/60 ring-offset-2 ring-offset-ucla-blue focus:outline-none focus:ring-2",
                                         selected
-                                            ? "bg-white text-ucla-blue shadow"
-                                            : "text-ucla-blue hover:bg-white/[0.12] hover:text-ucla-blue"
+                                            ? "bg-white dark:bg-gray-800 text-ucla-blue shadow"
+                                            : "text-ucla-blue hover:bg-white/[0.12] hover:text-ucla-blue dark:text-gray-300 dark:hover:bg-gray-800/50"
                                     )
                                 }
                                 onClick={() => setSelectedDiningHall(hall.code)}
@@ -203,7 +207,7 @@ export default function Home() {
 
                 <div className="mt-6 sm:mt-8">
                     <div className="flex justify-between items-center mb-3 sm:mb-4">
-                        <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+                        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                             Dietary Preferences
                         </h2>
                         {selectedTags.some((tag) =>
@@ -211,7 +215,7 @@ export default function Home() {
                         ) && (
                             <button
                                 onClick={clearPreferenceTags}
-                                className="text-xs sm:text-sm text-gray-500 hover:text-gray-700"
+                                className="text-xs sm:text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                             >
                                 Clear preferences
                             </button>
@@ -226,7 +230,7 @@ export default function Home() {
                                     "px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors",
                                     selectedTags.includes(tag.code)
                                         ? "bg-ucla-blue text-white"
-                                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                        : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
                                 )}
                                 title={tag.description}
                             >
@@ -238,13 +242,13 @@ export default function Home() {
 
                 <div className="mt-4">
                     <div className="flex justify-between items-center mb-3 sm:mb-4">
-                        <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+                        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                             Exclude Allergens
                         </h2>
                         {selectedTags.some((tag) => ALLERGEN_TAGS.has(tag)) && (
                             <button
                                 onClick={clearAllergenTags}
-                                className="text-xs sm:text-sm text-gray-500 hover:text-gray-700"
+                                className="text-xs sm:text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                             >
                                 Clear allergens
                             </button>
@@ -259,7 +263,7 @@ export default function Home() {
                                     "px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors",
                                     selectedTags.includes(tag.code)
                                         ? "bg-red-600 text-white"
-                                        : "bg-red-100 text-red-700 hover:bg-red-200"
+                                        : "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
                                 )}
                                 title={`Exclude dishes that ${tag.description.toLowerCase()}`}
                             >
@@ -275,7 +279,7 @@ export default function Home() {
                         <div className="flex justify-end">
                             <button
                                 onClick={clearAllFilters}
-                                className="text-xs sm:text-sm text-ucla-blue hover:text-ucla-blue/80 font-medium"
+                                className="text-xs sm:text-sm text-ucla-blue hover:text-ucla-blue/80 dark:text-ucla-blue/80 dark:hover:text-ucla-blue/60 font-medium"
                             >
                                 Clear all filters
                             </button>
@@ -284,13 +288,13 @@ export default function Home() {
                     {loading ? (
                         <div className="text-center py-8 sm:py-12">
                             <div className="inline-block animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-t-2 border-b-2 border-ucla-blue"></div>
-                            <p className="mt-2 text-sm sm:text-base text-gray-600">
+                            <p className="mt-2 text-sm sm:text-base text-gray-600 dark:text-gray-400">
                                 Loading dishes...
                             </p>
                         </div>
                     ) : dishes.length === 0 ? (
-                        <div className="text-center py-8 sm:py-12 bg-white rounded-lg shadow">
-                            <p className="text-sm sm:text-base text-gray-600">
+                        <div className="text-center py-8 sm:py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
+                            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                                 No dishes found with the selected filters
                             </p>
                         </div>
@@ -298,7 +302,7 @@ export default function Home() {
                         dishes.map((dish) => (
                             <div
                                 key={dish.id}
-                                className="bg-white p-4 sm:p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow relative"
+                                className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow relative"
                             >
                                 {user && (
                                     <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
@@ -310,7 +314,7 @@ export default function Home() {
                                 )}
                                 <div className="pr-8 sm:pr-10">
                                     <div className="flex flex-col gap-2">
-                                        <h3 className="text-lg sm:text-xl font-medium text-gray-900">
+                                        <h3 className="text-lg sm:text-xl font-medium text-gray-900 dark:text-white">
                                             {dish.name}
                                         </h3>
                                         {dish.rating && (
@@ -343,8 +347,8 @@ export default function Home() {
                                                             className={classNames(
                                                                 "px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-medium",
                                                                 tag.isPreference
-                                                                    ? "bg-ucla-blue/10 text-ucla-blue"
-                                                                    : "bg-red-100 text-red-700"
+                                                                    ? "bg-ucla-blue/10 text-ucla-blue dark:bg-ucla-blue/20 dark:text-ucla-blue/80"
+                                                                    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
                                                             )}
                                                             title={
                                                                 tag.description
@@ -358,7 +362,7 @@ export default function Home() {
                                         </div>
                                     )}
                                     {dish.ingredients && (
-                                        <div className="mt-2 text-xs sm:text-sm text-gray-500">
+                                        <div className="mt-2 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                                             {dish.ingredients.join(", ")}
                                         </div>
                                     )}
