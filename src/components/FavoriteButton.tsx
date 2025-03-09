@@ -1,108 +1,56 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { HeartIcon } from "@heroicons/react/24/outline";
-import { HeartIcon as HeartIconSolid } from "@heroicons/react/24/solid";
-import { addToFavorites, removeFromFavorites, isFavorite } from "@/lib/api";
-import { supabase } from "@/lib/supabase";
+import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
+import { addToFavorites, removeFromFavorites } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface FavoriteButtonProps {
     dishId: number;
-    className?: string;
+    initialIsFavorite?: boolean;
 }
 
 export default function FavoriteButton({
     dishId,
-    className = "",
+    initialIsFavorite = false,
 }: FavoriteButtonProps) {
-    const [isFavorited, setIsFavorited] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-    const { user, signInWithGoogle } = useAuth();
+    const { user } = useAuth();
+    const [isFavorite, setIsFavorite] = useState(initialIsFavorite);
+    const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        console.log("FavoriteButton mounted/updated:", {
-            dishId,
-            userId: user?.id,
-        });
-        checkFavoriteStatus();
-    }, [dishId, user]);
+    const toggleFavorite = async () => {
+        if (!user || isLoading) return;
 
-    const checkFavoriteStatus = async () => {
-        if (!user) {
-            console.log("No user, setting isFavorited to false");
-            setIsFavorited(false);
-            setIsLoading(false);
-            return;
-        }
-
-        console.log("Checking favorite status for:", {
-            dishId,
-            userId: user.id,
-        });
-        const favoriteStatus = await isFavorite(dishId, user.id);
-        console.log("Favorite status result:", {
-            dishId,
-            isFavorited: favoriteStatus,
-        });
-        setIsFavorited(favoriteStatus);
-        setIsLoading(false);
-    };
-
-    const handleClick = async () => {
-        if (!user) {
-            console.log("No user, triggering sign in");
-            signInWithGoogle();
-            return;
-        }
-
-        console.log("Handling favorite button click:", {
-            dishId,
-            currentStatus: isFavorited,
-        });
         setIsLoading(true);
         try {
-            if (isFavorited) {
-                const success = await removeFromFavorites(dishId, user.id);
-                console.log("Remove from favorites result:", { success });
-                if (success) setIsFavorited(false);
-            } else {
-                const success = await addToFavorites(dishId, user.id);
-                console.log("Add to favorites result:", { success });
-                if (success) setIsFavorited(true);
+            const success = isFavorite
+                ? await removeFromFavorites(dishId, user.id)
+                : await addToFavorites(dishId, user.id);
+
+            if (success) {
+                setIsFavorite(!isFavorite);
             }
         } catch (error) {
-            console.error("Error handling favorite button click:", error);
+            console.error("Error toggling favorite:", error);
         } finally {
             setIsLoading(false);
         }
     };
 
-    if (isLoading) {
-        return (
-            <button
-                className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${className}`}
-                disabled
-            >
-                <HeartIcon className="w-6 h-6 text-gray-400" />
-            </button>
-        );
-    }
-
     return (
         <button
-            onClick={handleClick}
-            className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${className}`}
-            title={
-                !user
-                    ? "Sign in to add favorites"
-                    : isFavorited
-                    ? "Remove from favorites"
-                    : "Add to favorites"
+            onClick={toggleFavorite}
+            disabled={isLoading}
+            className={`p-1 rounded-full hover:bg-gray-100 transition-colors ${
+                isLoading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            aria-label={
+                isFavorite ? "Remove from favorites" : "Add to favorites"
             }
         >
-            {isFavorited ? (
-                <HeartIconSolid className="w-6 h-6 text-red-500" />
+            {isFavorite ? (
+                <HeartSolidIcon className="h-6 w-6 text-red-500" />
             ) : (
-                <HeartIcon className="w-6 h-6 text-gray-400" />
+                <HeartIcon className="h-6 w-6 text-gray-400 hover:text-red-500" />
             )}
         </button>
     );
