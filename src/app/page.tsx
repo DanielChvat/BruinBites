@@ -154,30 +154,25 @@ export default function Home() {
     const allergenTags = dietaryTags.filter((tag) => tag.isAllergen);
 
     return (
-        <div className="min-h-screen py-4 sm:py-8">
-            <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 mb-6 sm:mb-8">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                        BruinBites
-                    </h1>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
+        <div className="min-h-screen">
+            <div className="max-w-7xl mx-auto">
+                <div className="flex justify-end mb-6">
+                    <div className="flex items-center gap-4">
                         <div className="text-base sm:text-lg text-gray-600 dark:text-gray-300">
                             Showing menu for:{" "}
                             <span className="font-semibold capitalize">
                                 {currentMealPeriod}
                             </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <SavePreferencesButton
-                                dietaryPreferences={selectedTags.filter((tag) =>
-                                    PREFERENCE_TAGS.has(tag)
-                                )}
-                                excludedAllergens={selectedTags.filter((tag) =>
-                                    ALLERGEN_TAGS.has(tag)
-                                )}
-                                excludedIngredients={excludedIngredients}
-                            />
-                        </div>
+                        <SavePreferencesButton
+                            dietaryPreferences={selectedTags.filter((tag) =>
+                                PREFERENCE_TAGS.has(tag)
+                            )}
+                            excludedAllergens={selectedTags.filter((tag) =>
+                                ALLERGEN_TAGS.has(tag)
+                            )}
+                            excludedIngredients={excludedIngredients}
+                        />
                     </div>
                 </div>
 

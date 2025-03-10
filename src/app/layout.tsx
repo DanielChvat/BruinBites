@@ -23,10 +23,12 @@ export default function RootLayout({
                 className={`${inter.className} min-h-full bg-gray-50 dark:bg-gray-900`}
             >
                 <AuthProvider>
-                    <Navbar />
-                    <main className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
-                        {children}
-                    </main>
+                    <div className="min-h-full flex flex-col">
+                        <Navbar />
+                        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+                            {children}
+                        </main>
+                    </div>
                 </AuthProvider>
             </body>
         </html>
