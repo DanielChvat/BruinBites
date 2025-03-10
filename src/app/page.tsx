@@ -16,7 +16,6 @@ import { useSavedPreferences } from "@/hooks/useSavedPreferences";
 import FavoriteButton from "@/components/FavoriteButton";
 import { useAuth } from "@/contexts/AuthContext";
 import RatingStars from "@/components/RatingStars";
-import DarkModeToggle from "@/components/DarkModeToggle";
 
 function classNames(...classes: string[]) {
     return classes.filter(Boolean).join(" ");
@@ -155,7 +154,7 @@ export default function Home() {
     const allergenTags = dietaryTags.filter((tag) => tag.isAllergen);
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-4 sm:py-8">
+        <div className="min-h-screen py-4 sm:py-8">
             <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 mb-6 sm:mb-8">
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
@@ -169,7 +168,6 @@ export default function Home() {
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <DarkModeToggle />
                             <SavePreferencesButton
                                 dietaryPreferences={selectedTags.filter((tag) =>
                                     PREFERENCE_TAGS.has(tag)
