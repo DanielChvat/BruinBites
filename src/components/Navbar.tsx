@@ -2,12 +2,13 @@
 
 import LoginButton from "./LoginButton";
 import { useAuth } from "@/contexts/AuthContext";
+import DarkModeToggle from "./DarkModeToggle";
 
 export default function Navbar() {
     const { user } = useAuth();
 
     return (
-        <nav className="bg-ucla-blue shadow-lg">
+        <nav className="bg-ucla-blue dark:bg-ucla-blue/90 shadow-lg">
             <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
                 <div className="flex flex-col sm:flex-row sm:items-center py-2 sm:py-0">
                     <div className="flex justify-between items-center h-14 sm:h-16">
@@ -16,7 +17,8 @@ export default function Navbar() {
                                 BruinBites
                             </h1>
                         </div>
-                        <div className="sm:hidden">
+                        <div className="flex items-center gap-2 sm:hidden">
+                            <DarkModeToggle />
                             <LoginButton />
                         </div>
                     </div>
@@ -28,7 +30,8 @@ export default function Navbar() {
                                     user.email?.split("@")[0]}
                             </span>
                         )}
-                        <div className="hidden sm:block">
+                        <div className="hidden sm:flex sm:items-center sm:gap-2">
+                            <DarkModeToggle />
                             <LoginButton />
                         </div>
                     </div>
