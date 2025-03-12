@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
+import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,6 +20,29 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en" className="h-full">
+            <head>
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: `
+                            (function() {
+                                // Check localStorage first
+                                const darkMode = localStorage.getItem('darkMode');
+                                if (darkMode !== null) {
+                                    if (darkMode === 'true') {
+                                        document.documentElement.classList.add('dark');
+                                    }
+                                    return;
+                                }
+                                
+                                // If no localStorage value, check system preference
+                                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                                    document.documentElement.classList.add('dark');
+                                }
+                            })();
+                        `,
+                    }}
+                />
+            </head>
             <body
                 className={`${inter.className} min-h-full bg-gray-50 dark:bg-gray-900`}
             >
