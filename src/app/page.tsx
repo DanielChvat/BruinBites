@@ -266,6 +266,163 @@ export default function Home() {
                     </div>
                 </div>
 
+                <div className="mt-6 sm:mt-8">
+                    <div className="flex justify-between items-center mb-3 sm:mb-4">
+                        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                            Exclude Ingredients
+                        </h2>
+                        {excludedIngredients.length > 0 && (
+                            <button
+                                onClick={() => setExcludedIngredients([])}
+                                className="text-xs sm:text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            >
+                                Clear ingredients
+                            </button>
+                        )}
+                    </div>
+
+                    {excludedIngredients.length > 0 && (
+                        <div className="mb-3 flex flex-wrap gap-1.5 sm:gap-2">
+                            {excludedIngredients.map((ingredient) => (
+                                <button
+                                    key={ingredient}
+                                    onClick={() => removeIngredient(ingredient)}
+                                    className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+                                >
+                                    {ingredient}
+                                    <svg
+                                        className="ml-1 h-3 w-3"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            fillRule="evenodd"
+                                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                            clipRule="evenodd"
+                                        />
+                                    </svg>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    <Combobox
+                        value={ingredientQuery}
+                        onChange={(value) => {
+                            if (value && !excludedIngredients.includes(value)) {
+                                setExcludedIngredients([
+                                    ...excludedIngredients,
+                                    value,
+                                ]);
+                            }
+                            setIngredientQuery("");
+                        }}
+                    >
+                        <div className="relative w-full">
+                            <div className="relative">
+                                <Combobox.Input
+                                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 py-2 pl-3 pr-10 text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-ucla-blue focus:border-transparent"
+                                    placeholder="Search ingredients to exclude..."
+                                    onChange={(event) =>
+                                        setIngredientQuery(event.target.value)
+                                    }
+                                    displayValue={(ingredient: string) =>
+                                        ingredient
+                                    }
+                                />
+                                <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
+                                    <svg
+                                        className="h-5 w-5 text-gray-400"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            fillRule="evenodd"
+                                            d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                                            clipRule="evenodd"
+                                        />
+                                    </svg>
+                                </Combobox.Button>
+                            </div>
+
+                            <Combobox.Options className="absolute z-50 mt-1 w-full max-h-[300px] overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                {filteredIngredients
+                                    .filter(
+                                        (ingredient) =>
+                                            !excludedIngredients.includes(
+                                                ingredient
+                                            )
+                                    )
+                                    .slice(0, 50).length === 0 ? (
+                                    <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">
+                                        No ingredients found.
+                                    </div>
+                                ) : (
+                                    filteredIngredients
+                                        .filter(
+                                            (ingredient) =>
+                                                !excludedIngredients.includes(
+                                                    ingredient
+                                                )
+                                        )
+                                        .slice(0, 50)
+                                        .map((ingredient) => (
+                                            <Combobox.Option
+                                                key={ingredient}
+                                                value={ingredient}
+                                                className={({ active }) =>
+                                                    `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                                        active
+                                                            ? "bg-ucla-blue text-white"
+                                                            : "text-gray-900 dark:text-white"
+                                                    }`
+                                                }
+                                            >
+                                                {({ selected, active }) => (
+                                                    <>
+                                                        <span
+                                                            className={`block truncate ${
+                                                                selected
+                                                                    ? "font-medium"
+                                                                    : "font-normal"
+                                                            }`}
+                                                        >
+                                                            {ingredient}
+                                                        </span>
+                                                        {selected ? (
+                                                            <span
+                                                                className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                                                    active
+                                                                        ? "text-white"
+                                                                        : "text-ucla-blue"
+                                                                }`}
+                                                            >
+                                                                <svg
+                                                                    className="h-5 w-5"
+                                                                    xmlns="http://www.w3.org/2000/svg"
+                                                                    viewBox="0 0 20 20"
+                                                                    fill="currentColor"
+                                                                >
+                                                                    <path
+                                                                        fillRule="evenodd"
+                                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                                        clipRule="evenodd"
+                                                                    />
+                                                                </svg>
+                                                            </span>
+                                                        ) : null}
+                                                    </>
+                                                )}
+                                            </Combobox.Option>
+                                        ))
+                                )}
+                            </Combobox.Options>
+                        </div>
+                    </Combobox>
+                </div>
+
                 <div className="mt-6 sm:mt-8 space-y-3 sm:space-y-4">
                     {(selectedTags.length > 0 ||
                         excludedIngredients.length > 0) && (
