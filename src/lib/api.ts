@@ -544,7 +544,8 @@ export async function getDishRating(
     const { data: ratings, error: ratingsError } = await supabaseClient
         .from("dish_ratings")
         .select("rating")
-        .eq("dish_id", dishId);
+        .eq("dish_id", dishId)
+        .throwOnError();
 
     if (ratingsError) {
         console.error("Error fetching dish ratings:", ratingsError);
@@ -559,15 +560,20 @@ export async function getDishRating(
     // If user is logged in, get their rating
     let userRating: number | undefined;
     if (userId) {
-        const { data: userRatingData } = await supabaseClient
-            .from("dish_ratings")
-            .select("rating")
-            .eq("dish_id", dishId)
-            .eq("user_id", userId)
-            .single();
+        const { data: userRatingData, error: userRatingError } =
+            await supabaseClient
+                .from("dish_ratings")
+                .select("rating")
+                .eq("dish_id", dishId)
+                .eq("user_id", userId)
+                .limit(1)
+                .throwOnError();
 
-        if (userRatingData) {
-            userRating = userRatingData.rating;
+        if (userRatingError && (userRatingError as any).code !== "PGRST116") {
+            // PGRST116 is "not found"
+            console.error("Error fetching user rating:", userRatingError);
+        } else if (userRatingData && userRatingData.length > 0) {
+            userRating = userRatingData[0].rating;
         }
     }
 
