@@ -577,3 +577,23 @@ export async function getDishRating(
         userRating,
     };
 }
+
+export async function saveThemePreference(userId: string, isDarkMode: boolean) {
+    try {
+        const { error } = await supabase.from("user_preferences").upsert(
+            {
+                user_id: userId,
+                theme: isDarkMode ? "dark" : "light",
+            },
+            {
+                onConflict: "user_id",
+            }
+        );
+
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error("Error saving theme preference:", error);
+        return false;
+    }
+}

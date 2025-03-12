@@ -7,6 +7,7 @@ export interface UserPreferences {
     allergenFilters: string[];
     ingredientFilters: string[];
     favoriteDishes: string[];
+    theme?: "light" | "dark";
 }
 
 const supabase = createClientComponentClient();
@@ -25,6 +26,7 @@ export async function saveUserPreferences(preferences: UserPreferences) {
         allergen_filters: preferences.allergenFilters,
         ingredient_filters: preferences.ingredientFilters,
         favorite_dishes: preferences.favoriteDishes,
+        theme: preferences.theme,
         updated_at: new Date().toISOString(),
     });
 
@@ -53,6 +55,7 @@ export async function getUserPreferences(): Promise<UserPreferences | null> {
         allergenFilters: data.allergen_filters || [],
         ingredientFilters: data.ingredient_filters || [],
         favoriteDishes: data.favorite_dishes || [],
+        theme: data.theme,
     };
 }
 
@@ -68,4 +71,27 @@ export async function updateUserPreferences(updates: Partial<UserPreferences>) {
     };
 
     return saveUserPreferences(updatedPreferences);
+}
+
+export async function saveThemePreference(theme: "light" | "dark") {
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user)
+        throw new Error("User must be authenticated to save theme preference");
+
+    const { error } = await supabase.from("user_preferences").upsert(
+        {
+            user_id: user.id,
+            theme,
+            updated_at: new Date().toISOString(),
+        },
+        {
+            onConflict: "user_id",
+        }
+    );
+
+    if (error) throw error;
+    return true;
 }
