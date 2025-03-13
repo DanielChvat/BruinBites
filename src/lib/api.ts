@@ -71,10 +71,22 @@ export async function getDishes(
     const allergenTags = selectedTags.filter((tag) => ALLERGEN_TAGS.has(tag));
 
     const currentMealPeriod = getCurrentMealPeriod();
-    const pdtDate = new Date().toLocaleString("en-US", {
-        timeZone: "America/Los_Angeles",
-    });
-    const today = new Date(pdtDate).toISOString().split("T")[0];
+
+    // Get current date in PDT using Date constructor directly with PDT timezone offset
+    const now = new Date();
+    // Convert to PDT by subtracting 7 hours from UTC
+    const pdtDateTime = new Date(now.getTime() - 7 * 60 * 60 * 1000);
+
+    // If it's past 3pm (15:00), we're showing dinner menu which is technically tomorrow's date in the database
+    const hours = pdtDateTime.getHours();
+    const shouldUseNextDay = hours >= 15 && currentMealPeriod === "Dinner";
+
+    // If we should use next day's date, add one day to the current date
+    if (shouldUseNextDay) {
+        pdtDateTime.setDate(pdtDateTime.getDate() + 1);
+    }
+
+    const today = pdtDateTime.toISOString().split("T")[0];
 
     console.log("Fetching dishes with params:", {
         diningHallCode,
@@ -83,6 +95,10 @@ export async function getDishes(
         preferenceTags,
         allergenTags,
         userId,
+        pdtHours: hours,
+        shouldUseNextDay,
+        originalDate: now.toISOString(),
+        pdtDate: pdtDateTime.toISOString(),
     });
 
     // Get user's favorites if userId is provided
